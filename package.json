@@ -1,0 +1,36 @@
+{
+  "name": "flock-webgl",
+  "version": "1.0.0",
+  "description": "Flock Behavior Simulation rendered in WebGL",
+  "scripts": {
+    "start": "npm-run-all --parallel build:watch serve",
+    "build": "rollup -c",
+    "build:watch": "rollup -c -w",
+    "serve": "browser-sync start -s -f build/**/*"
+  },
+  "main": "index.js",
+  "homepage": "https://github.com/aurbano/flock-webgl",
+  "repository": "git@github.com:aurbano/flock-webgl.git",
+  "author": "Alejandro U. Alvarez <aluralma@gmail.com>",
+  "license": "AGPL-3",
+  "private": true,
+  "dependencies": {
+    "dat.gui": "^0.7.6",
+    "pixi.js": "^5.2.1",
+    "simplex-noise": "^2.4.0",
+    "stats.js": "^0.17.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "@rollup/plugin-typescript": "^3.0.0",
+    "@types/dat.gui": "^0.7.5",
+    "@types/node": "^10.0.3",
+    "@types/stats.js": "^0.17.0",
+    "browser-sync": "^2.26.7",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^1.31.0",
+    "tslib": "^1.10.0",
+    "typescript": "~3.7.5"
+  }
+}
