@@ -5,7 +5,7 @@ import { setupGui } from './lib/gui';
 const options: Options = {
   containerId: 'flock',
   size: 2.5,
-  number: 10000,
+  number: 100,
 };
 
 // Setup the Renderer

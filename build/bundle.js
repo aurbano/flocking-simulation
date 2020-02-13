@@ -43531,7 +43531,7 @@ b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return {d
 var Renderer = (function () {
     function Renderer(options) {
         this.options = options;
-        this.birds = [];
+        this.boids = [];
         this.app = new app_1({
             resizeTo: window,
             resolution: devicePixelRatio,
@@ -43549,7 +43549,7 @@ var Renderer = (function () {
         graphics.drawCircle(options.size, options.size, options.size);
         graphics.endFill();
         var region = new math_11(0, 0, options.size * 2, options.size * 2);
-        this.birdTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+        this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
         document.getElementById(this.options.containerId).appendChild(this.app.view);
     }
     Renderer.prototype.start = function () {
@@ -43557,32 +43557,59 @@ var Renderer = (function () {
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
         for (var i = 0; i < this.options.number; i++) {
-            var bird = new sprite_1(this.birdTexture);
-            bird.x = Math.floor(Math.random() * maxX);
-            bird.y = Math.floor(Math.random() * maxY);
-            this.birds[i] = {
+            var boid = new sprite_1(this.boidTexture);
+            boid.x = Math.floor(Math.random() * maxX);
+            boid.y = Math.floor(Math.random() * maxY);
+            this.boids[i] = {
                 dx: (Math.random() - 0.5) * 2,
                 dy: (Math.random() - 0.5) * 2,
             };
-            this.container.addChild(bird);
+            this.container.addChild(boid);
         }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
             var children = _this.container.children.length;
             for (var i = 0; i < children; i++) {
-                var sprite = _this.container.children[i];
-                var speed = _this.birds[i];
-                sprite.x += speed.dx;
-                sprite.y += speed.dy;
-                if (sprite.x >= maxX || sprite.x <= 0) {
+                var boid = _this.container.children[i];
+                var speed = _this.boids[i];
+                for (var a = 0; a < children; a++) {
+                    if (a === i) {
+                        continue;
+                    }
+                    var neighbour = _this.container.children[a];
+                    var neighbour_speed = _this.boids[a];
+                    var d = _this.distance(_this.position(boid), _this.position(neighbour));
+                    if (d < 40) {
+                        speed.dx -= neighbour_speed.dx * d / 300;
+                        speed.dy -= neighbour_speed.dy * d / 300;
+                    }
+                    else if (d < 100) {
+                        speed.dx -= neighbour_speed.dx / d;
+                        speed.dy -= neighbour_speed.dy / d;
+                    }
+                }
+                boid.x = boid.x + speed.dx;
+                boid.y = boid.y + speed.dy;
+                if (boid.x >= maxX || boid.x <= 0) {
                     speed.dx *= -1;
                 }
-                if (sprite.y >= maxY || sprite.y <= 0) {
+                if (boid.y >= maxY || boid.y <= 0) {
                     speed.dy *= -1;
                 }
             }
             _this.stats.end();
         });
+    };
+    Renderer.prototype.position = function (sprite) {
+        return {
+            x: sprite.x,
+            y: sprite.y,
+        };
+    };
+    Renderer.prototype.distance = function (p1, p2) {
+        var dx = Math.abs(p2.x - p1.x);
+        var dy = Math.abs(p2.y - p1.y);
+        return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
     };
     return Renderer;
 }());
@@ -46096,7 +46123,7 @@ function setupGui(options) {
 var options = {
     containerId: 'flock',
     size: 2.5,
-    number: 10000,
+    number: 100,
 };
 var renderer = new Renderer(options);
 setupGui();
