@@ -16,6 +16,7 @@ export function setupGui(options: Options) {
   distances.add(options, 'cohesionRadius', 0, 500, 1);
   distances.add(options, 'separationRadius', 0, 500, 1);
   distances.add(options, 'alignmentRadius', 0, 500, 1);
+  distances.add(options, 'predatorRadius', 0, 500, 1);
 
   const forces = gui.addFolder('Forces');
   forces.open();

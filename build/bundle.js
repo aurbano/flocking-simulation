@@ -43600,30 +43600,39 @@ var Renderer = (function () {
                     continue;
                 }
                 var neighbour = this.boids[a];
-                var d = this.distance(this.position(boid), this.position(neighbour));
+                var d = Renderer.distance(boid, neighbour);
                 if (d < this.options.separationRadius) {
                     separationNeighbours.push(neighbour);
                 }
-                else if (d < this.options.alignmentRadius) {
+                if (d < this.options.alignmentRadius) {
                     alignmentNeighbours.push(neighbour);
                 }
-                else if (d < this.options.cohesionRadius) {
+                if (d < this.options.cohesionRadius) {
                     cohesionNeighbours.push(neighbour);
                 }
             }
             boid.tint = 0xcccccc;
             if (separationNeighbours.length > 0) {
-                f_separation = this.getRotation(separationNeighbours, boid);
-                f_separation += Math.PI;
+                f_separation = Renderer.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
             }
             if (alignmentNeighbours.length > 0) {
                 boid.tint = 0x9dd60b;
             }
             if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
-                boid.tint = 0xeb0000;
+                boid.tint = 0xaaaaaa;
             }
-            f_alignment = this.getRotation(alignmentNeighbours, boid);
-            f_cohesion = this.getRotation(cohesionNeighbours, boid);
+            if (alignmentNeighbours.length > 0) {
+                f_alignment = Renderer.getNeighboursRotation(alignmentNeighbours, boid);
+            }
+            if (cohesionNeighbours.length > 0) {
+                f_cohesion = Renderer.getNeighboursRotation(cohesionNeighbours, boid);
+            }
+            var mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
+            var mouseDistance = Renderer.distance(mouseCoords, boid);
+            if (mouseDistance < this.options.predatorRadius) {
+                boid.tint = 0xeb0000;
+                f_predators = Renderer.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+            }
             boid.rotation = boid.rotation +
                 this.options.cohesionForce * f_cohesion / 100 +
                 this.options.separationForce * f_separation / 100 +
@@ -43634,45 +43643,42 @@ var Renderer = (function () {
             var dy = Math.cos(boid.rotation) * this.options.speed;
             boid.x -= dx * delta;
             boid.y += dy * delta;
-            if (boid.x < 0) {
-                boid.x = maxX;
+            if (boid.x <= 0) {
+                boid.x = maxX - 1;
             }
             else if (boid.x >= maxX) {
-                boid.x = 0;
+                boid.x = 1;
             }
-            if (boid.y < 0) {
-                boid.y = maxY;
+            if (boid.y <= 0) {
+                boid.y = maxY - 1;
             }
             else if (boid.y >= maxY) {
-                boid.y = 0;
+                boid.y = 1;
             }
         }
     };
-    Renderer.prototype.random = function (min, max) {
+    Renderer.random = function (min, max) {
         return min + Math.random() * (max - min);
     };
-    Renderer.prototype.getRotation = function (neighbours, boid) {
+    Renderer.getNeighboursRotation = function (neighbours, boid) {
         if (neighbours.length < 1) {
             return 0;
         }
-        var meanX = this.arrayMean(neighbours, function (boid) { return boid.x; });
-        var meanY = this.arrayMean(neighbours, function (boid) { return boid.y; });
+        var meanX = Renderer.arrayMean(neighbours, function (boid) { return boid.x; });
+        var meanY = Renderer.arrayMean(neighbours, function (boid) { return boid.y; });
+        return Renderer.getRotation(meanX, meanY, boid);
+    };
+    Renderer.getRotation = function (meanX, meanY, boid) {
         var mean_dx = meanX - boid.x;
         var mean_dy = meanY - boid.y;
         return Math.atan2(mean_dy, mean_dx) - boid.rotation;
     };
-    Renderer.prototype.position = function (sprite) {
-        return {
-            x: sprite.x,
-            y: sprite.y,
-        };
-    };
-    Renderer.prototype.distance = function (p1, p2) {
+    Renderer.distance = function (p1, p2) {
         var dx = Math.abs(p2.x - p1.x);
         var dy = Math.abs(p2.y - p1.y);
         return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
     };
-    Renderer.prototype.arrayMean = function (arr, getKey) {
+    Renderer.arrayMean = function (arr, getKey) {
         var result = 0;
         for (var i = 0; i < arr.length; i++) {
             result += getKey(arr[i]);
@@ -43682,6 +43688,7 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
+//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46191,6 +46198,7 @@ function setupGui(options) {
     distances.add(options, 'cohesionRadius', 0, 500, 1);
     distances.add(options, 'separationRadius', 0, 500, 1);
     distances.add(options, 'alignmentRadius', 0, 500, 1);
+    distances.add(options, 'predatorRadius', 0, 500, 1);
     var forces = gui.addFolder('Forces');
     forces.open();
     forces.add(options, 'cohesionForce', 0, 100, 1);
@@ -46211,6 +46219,7 @@ var options = {
     cohesionRadius: 130,
     alignmentRadius: 25,
     separationRadius: 10,
+    predatorRadius: 150,
     cohesionForce: 10,
     separationForce: 25,
     alignmentForce: 50,
@@ -46220,5 +46229,4 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options);
 renderer.start();
-//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

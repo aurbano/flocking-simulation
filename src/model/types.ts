@@ -9,6 +9,7 @@ export type Options = {
   cohesionRadius: number,
   separationRadius: number,
   alignmentRadius: number,
+  predatorRadius: number,
 
   cohesionForce: number,
   separationForce: number,

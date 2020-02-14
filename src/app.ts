@@ -13,6 +13,7 @@ const options: Options = {
   cohesionRadius: 130,
   alignmentRadius: 25,
   separationRadius: 10,
+  predatorRadius: 150,
 
   cohesionForce: 10,
   separationForce: 25,

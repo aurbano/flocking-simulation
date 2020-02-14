@@ -104,13 +104,15 @@ export class Renderer {
           continue;
         }
         const neighbour = this.boids[a];
-        const d = this.distance(this.position(boid), this.position(neighbour));
+        const d = Renderer.distance(boid, neighbour);
 
         if (d < this.options.separationRadius) {
           separationNeighbours.push(neighbour);
-        } else if (d < this.options.alignmentRadius) {
+        }
+        if (d < this.options.alignmentRadius) {
           alignmentNeighbours.push(neighbour);
-        } else if (d < this.options.cohesionRadius) {
+        }
+        if (d < this.options.cohesionRadius) {
           cohesionNeighbours.push(neighbour);
         }  
       }
@@ -119,8 +121,7 @@ export class Renderer {
 
       // Calculate forces
       if (separationNeighbours.length > 0) {
-        f_separation = this.getRotation(separationNeighbours, boid);
-        f_separation += Math.PI; // cant turn instantly
+        f_separation = Renderer.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
       }
 
       if (alignmentNeighbours.length > 0) {
@@ -128,11 +129,24 @@ export class Renderer {
       }
 
       if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
-        boid.tint = 0xeb0000;
+        boid.tint = 0xaaaaaa;
       }
 
-      f_alignment = this.getRotation(alignmentNeighbours, boid);
-      f_cohesion = this.getRotation(cohesionNeighbours, boid);
+      if (alignmentNeighbours.length > 0) {
+        f_alignment = Renderer.getNeighboursRotation(alignmentNeighbours, boid);
+      }
+
+      if (cohesionNeighbours.length > 0) {
+        f_cohesion = Renderer.getNeighboursRotation(cohesionNeighbours, boid);
+      }
+
+      // set the mouse as an enemy
+      const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
+      const mouseDistance = Renderer.distance(mouseCoords, boid);
+      if (mouseDistance < this.options.predatorRadius) {
+        boid.tint = 0xeb0000;
+        f_predators = Renderer.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+      }
 
       // REF:
       // https://github.com/rafinskipg/birds/blob/master/app/scripts/models/birdsGenerator.js
@@ -156,32 +170,36 @@ export class Renderer {
       boid.y += dy * delta;
 
       // Wrap around
-      if (boid.x < 0) {
-        boid.x = maxX;
+      if (boid.x <= 0) {
+        boid.x = maxX - 1;
       } else if (boid.x >= maxX) {
-        boid.x = 0;
+        boid.x = 1;
       }
 
-      if (boid.y < 0) {
-        boid.y = maxY;
+      if (boid.y <= 0) {
+        boid.y = maxY - 1;
       } else if (boid.y >= maxY) {
-        boid.y = 0;
+        boid.y = 1;
       }
     }
   }
 
-  private random(min: number, max: number) {
+  private static random(min: number, max: number) {
     return min + Math.random() * (max - min);
   }
 
-  private getRotation(neighbours: Array<PIXI.Sprite>, boid: PIXI.Sprite) {
+  private static getNeighboursRotation(neighbours: Array<PIXI.Sprite>, boid: PIXI.Sprite) {
     if (neighbours.length < 1) {
       return 0;
     }
 
-    const meanX = this.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.x);
-    const meanY = this.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.y);
+    const meanX = Renderer.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.x);
+    const meanY = Renderer.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.y);
 
+    return Renderer.getRotation(meanX, meanY, boid);
+  }
+
+  private static getRotation(meanX: number, meanY: number, boid: PIXI.Sprite) {
     // Vector from boid to mean neighbours
     const mean_dx = meanX - boid.x;
     const mean_dy = meanY - boid.y;
@@ -190,21 +208,14 @@ export class Renderer {
     return Math.atan2(mean_dy, mean_dx) - boid.rotation;
   }
 
-  private position(sprite: PIXI.Sprite) {
-    return {
-      x: sprite.x,
-      y: sprite.y,
-    };
-  }
-
-  private distance(p1: Position, p2: Position) {
+  private static distance(p1: Position, p2: Position) {
     // Approximation by using octagons approach
   	const dx = Math.abs(p2.x - p1.x);
   	const dy = Math.abs(p2.y - p1.y);
   	return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));	
   }
 
-  private arrayMean(arr: Array<any>, getKey: Function) {
+  private static arrayMean(arr: Array<any>, getKey: Function) {
     let result = 0;
     for (let i = 0; i < arr.length; i++) {
         result += getKey(arr[i]);
