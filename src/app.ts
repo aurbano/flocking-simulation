@@ -4,8 +4,21 @@ import { setupGui } from './lib/gui';
 
 const options: Options = {
   containerId: 'flock',
-  size: 2.5,
-  number: 100,
+  boidLength: 5,
+  boidHeight: 10,
+  number: 350,
+
+  speed: 3,
+
+  cohesionRadius: 130,
+  alignmentRadius: 25,
+  separationRadius: 10,
+
+  cohesionForce: 10,
+  separationForce: 25,
+  alignmentForce: 50,
+  predatorForce: 60,
+  obstacleForce: 20,
 };
 
 // Setup the Renderer

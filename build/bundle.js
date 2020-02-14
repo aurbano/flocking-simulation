@@ -43536,20 +43536,29 @@ var Renderer = (function () {
             resizeTo: window,
             resolution: devicePixelRatio,
             autoDensity: true,
-            backgroundColor: 0x333333,
+            backgroundColor: 0x111111,
         });
         this.stats = new stats_min();
         this.stats.showPanel(0);
         document.body.appendChild(this.stats.dom);
-        this.container = new particles_1();
+        this.container = new particles_1(this.options.number, {
+            position: true,
+            rotation: true,
+            tint: true,
+        });
         this.app.stage.addChild(this.container);
         var graphics = new graphics_3();
         graphics.beginFill(0xcccccc);
         graphics.lineStyle(0);
-        graphics.drawCircle(options.size, options.size, options.size);
+        graphics.drawPolygon([
+            new math_8(this.options.boidLength / 2, this.options.boidHeight),
+            new math_8(0, 0),
+            new math_8(this.options.boidLength, 0),
+        ]);
         graphics.endFill();
-        var region = new math_11(0, 0, options.size * 2, options.size * 2);
+        var region = new math_11(0, 0, options.boidLength, options.boidHeight);
         this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+        this.boidTexture.defaultAnchor.set(0.5, 0.5);
         document.getElementById(this.options.containerId).appendChild(this.app.view);
     }
     Renderer.prototype.start = function () {
@@ -43560,45 +43569,97 @@ var Renderer = (function () {
             var boid = new sprite_1(this.boidTexture);
             boid.x = Math.floor(Math.random() * maxX);
             boid.y = Math.floor(Math.random() * maxY);
-            this.boids[i] = {
-                dx: (Math.random() - 0.5) * 2,
-                dy: (Math.random() - 0.5) * 2,
-            };
+            boid.pivot.set(this.options.boidLength / 2, this.options.boidHeight);
+            boid.anchor.set(0.5, 0.5);
+            boid.rotation = Math.random() * Math.PI * 2;
             this.container.addChild(boid);
+            this.boids.push(boid);
         }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
-            var children = _this.container.children.length;
-            for (var i = 0; i < children; i++) {
-                var boid = _this.container.children[i];
-                var speed = _this.boids[i];
-                for (var a = 0; a < children; a++) {
-                    if (a === i) {
-                        continue;
-                    }
-                    var neighbour = _this.container.children[a];
-                    var neighbour_speed = _this.boids[a];
-                    var d = _this.distance(_this.position(boid), _this.position(neighbour));
-                    if (d < 40) {
-                        speed.dx -= neighbour_speed.dx * d / 300;
-                        speed.dy -= neighbour_speed.dy * d / 300;
-                    }
-                    else if (d < 100) {
-                        speed.dx -= neighbour_speed.dx / d;
-                        speed.dy -= neighbour_speed.dy / d;
-                    }
-                }
-                boid.x = boid.x + speed.dx;
-                boid.y = boid.y + speed.dy;
-                if (boid.x >= maxX || boid.x <= 0) {
-                    speed.dx *= -1;
-                }
-                if (boid.y >= maxY || boid.y <= 0) {
-                    speed.dy *= -1;
-                }
-            }
+            _this.updateBoids(delta);
             _this.stats.end();
         });
+    };
+    Renderer.prototype.updateBoids = function (delta) {
+        var maxX = this.app.screen.width;
+        var maxY = this.app.screen.height;
+        var children = this.boids.length;
+        for (var i = 0; i < children; i++) {
+            var boid = this.boids[i];
+            var f_cohesion = 0;
+            var f_separation = 0;
+            var f_alignment = 0;
+            var f_predators = 0;
+            var f_obstacles = 0;
+            var cohesionNeighbours = [];
+            var separationNeighbours = [];
+            var alignmentNeighbours = [];
+            for (var a = 0; a < children; a++) {
+                if (a === i) {
+                    continue;
+                }
+                var neighbour = this.boids[a];
+                var d = this.distance(this.position(boid), this.position(neighbour));
+                if (d < this.options.separationRadius) {
+                    separationNeighbours.push(neighbour);
+                }
+                else if (d < this.options.alignmentRadius) {
+                    alignmentNeighbours.push(neighbour);
+                }
+                else if (d < this.options.cohesionRadius) {
+                    cohesionNeighbours.push(neighbour);
+                }
+            }
+            boid.tint = 0xcccccc;
+            if (separationNeighbours.length > 0) {
+                f_separation = this.getRotation(separationNeighbours, boid);
+                f_separation += Math.PI;
+            }
+            if (alignmentNeighbours.length > 0) {
+                boid.tint = 0x9dd60b;
+            }
+            if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
+                boid.tint = 0xeb0000;
+            }
+            f_alignment = this.getRotation(alignmentNeighbours, boid);
+            f_cohesion = this.getRotation(cohesionNeighbours, boid);
+            boid.rotation = boid.rotation +
+                this.options.cohesionForce * f_cohesion / 100 +
+                this.options.separationForce * f_separation / 100 +
+                this.options.alignmentForce * f_alignment / 100 +
+                this.options.predatorForce * f_predators / 100 +
+                this.options.obstacleForce * f_obstacles / 100;
+            var dx = Math.sin(boid.rotation) * this.options.speed;
+            var dy = Math.cos(boid.rotation) * this.options.speed;
+            boid.x -= dx * delta;
+            boid.y += dy * delta;
+            if (boid.x < 0) {
+                boid.x = maxX;
+            }
+            else if (boid.x >= maxX) {
+                boid.x = 0;
+            }
+            if (boid.y < 0) {
+                boid.y = maxY;
+            }
+            else if (boid.y >= maxY) {
+                boid.y = 0;
+            }
+        }
+    };
+    Renderer.prototype.random = function (min, max) {
+        return min + Math.random() * (max - min);
+    };
+    Renderer.prototype.getRotation = function (neighbours, boid) {
+        if (neighbours.length < 1) {
+            return 0;
+        }
+        var meanX = this.arrayMean(neighbours, function (boid) { return boid.x; });
+        var meanY = this.arrayMean(neighbours, function (boid) { return boid.y; });
+        var mean_dx = meanX - boid.x;
+        var mean_dy = meanY - boid.y;
+        return Math.atan2(mean_dy, mean_dx) - boid.rotation;
     };
     Renderer.prototype.position = function (sprite) {
         return {
@@ -43610,6 +43671,14 @@ var Renderer = (function () {
         var dx = Math.abs(p2.x - p1.x);
         var dy = Math.abs(p2.y - p1.y);
         return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
+    };
+    Renderer.prototype.arrayMean = function (arr, getKey) {
+        var result = 0;
+        for (var i = 0; i < arr.length; i++) {
+            result += getKey(arr[i]);
+        }
+        result /= arr.length;
+        return result;
     };
     return Renderer;
 }());
@@ -46114,19 +46183,42 @@ function setupGui(options) {
         name: 'Setings',
         closed: true,
     });
-    var rendering = gui.addFolder('Rendering');
-    rendering.open();
+    var general = gui.addFolder('General');
+    general.open();
+    general.add(options, 'speed', 0, 25, 1);
+    var distances = gui.addFolder('Distances');
+    distances.open();
+    distances.add(options, 'cohesionRadius', 0, 500, 1);
+    distances.add(options, 'separationRadius', 0, 500, 1);
+    distances.add(options, 'alignmentRadius', 0, 500, 1);
+    var forces = gui.addFolder('Forces');
+    forces.open();
+    forces.add(options, 'cohesionForce', 0, 100, 1);
+    forces.add(options, 'separationForce', 0, 100, 1);
+    forces.add(options, 'alignmentForce', 0, 100, 1);
+    forces.add(options, 'predatorForce', 0, 100, 1);
+    forces.add(options, 'obstacleForce', 0, 100, 1);
     return gui;
 }
 //# sourceMappingURL=gui.js.map
 
 var options = {
     containerId: 'flock',
-    size: 2.5,
-    number: 100,
+    boidLength: 5,
+    boidHeight: 10,
+    number: 350,
+    speed: 3,
+    cohesionRadius: 130,
+    alignmentRadius: 25,
+    separationRadius: 10,
+    cohesionForce: 10,
+    separationForce: 25,
+    alignmentForce: 50,
+    predatorForce: 60,
+    obstacleForce: 20,
 };
 var renderer = new Renderer(options);
-setupGui();
+setupGui(options);
 renderer.start();
 //# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map
