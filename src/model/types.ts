@@ -3,6 +3,11 @@ export type Options = {
   boidLength: number,
   boidHeight: number,
   number: number,
+  gridSize: number,
+  background: number,
+
+  gridIncrease: number,
+  gridAttenuation: number,
 
   speed: number,
 

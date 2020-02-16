@@ -10,6 +10,11 @@ export function setupGui(options: Options) {
   const general = gui.addFolder('General');
   general.open();
   general.add(options, 'speed', 0, 25, 1);
+  
+  const heatmap = gui.addFolder('Heatmap');
+  heatmap.open();
+  heatmap.add(options, 'gridIncrease', 0, 100, 0.1);
+  heatmap.add(options, 'gridAttenuation', 0, 100, 1);
 
   const distances = gui.addFolder('Distances');
   distances.open();

@@ -11,17 +11,22 @@ type Position = {
 export class Renderer {
   private app: PIXI.Application;
   private container: PIXI.ParticleContainer;
+  private gridContainer: PIXI.ParticleContainer;
   private boidTexture: PIXI.Texture;
+  private gridTexture: PIXI.Texture;
   private stats: Stats;
 
   private boids: PIXI.Sprite[] = [];
+  private grid: PIXI.Sprite[][] = [];
+  private gridHistory: number[][] = [];
+  private gridMax: number = 10;
 
   constructor(private options: Options) {
     this.app = new PIXI.Application({
       resizeTo: window,
       resolution: devicePixelRatio,
       autoDensity: true,
-      backgroundColor: 0x111111,
+      backgroundColor: options.background,
     });
 
     this.stats = new Stats();
@@ -33,6 +38,17 @@ export class Renderer {
       rotation: true,
       tint: true,
     });
+
+    const maxX = this.app.screen.width;
+    const maxY = this.app.screen.height;
+    const gridItems = (maxX / this.options.gridSize) * (maxY / this.options.gridSize);
+
+    this.gridContainer = new PIXI.ParticleContainer(gridItems, {
+      position: false,
+      rotation: false,
+      tint: true,
+    });
+    this.app.stage.addChild(this.gridContainer);
     this.app.stage.addChild(this.container);
 
     // Prepare the boid texture for sprites
@@ -45,9 +61,17 @@ export class Renderer {
       new PIXI.Point(this.options.boidLength, 0),
     ]);
     graphics.endFill();
-    const region = new PIXI.Rectangle(0, 0, options.boidLength, options.boidHeight);
+    let region = new PIXI.Rectangle(0, 0, options.boidLength, options.boidHeight);
     this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
     this.boidTexture.defaultAnchor.set(0.5, 0.5);
+
+    // Prepare the grid texture
+    graphics.beginFill(0xffffff);
+    graphics.lineStyle(1);
+    graphics.drawRect(0, 0, this.options.gridSize, this.options.gridSize);
+    graphics.endFill();
+    region = new PIXI.Rectangle(0, 0, options.gridSize, options.gridSize);
+    this.gridTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
 
     // Render the app
     document.getElementById(this.options.containerId).appendChild(this.app.view);
@@ -56,33 +80,99 @@ export class Renderer {
   public start() {
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
+
+    // initialize grid
+    for (let gridX = 0; gridX < maxX / this.options.gridSize; gridX++) {
+      this.grid[gridX] = [];
+      this.gridHistory[gridX] = [];
+
+      for (let gridY = 0; gridY < maxY / this.options.gridSize; gridY++) {
+        const gridCell = new PIXI.Sprite(this.gridTexture);
+        gridCell.x = gridX * this.options.gridSize;
+        gridCell.y = gridY * this.options.gridSize;
+        gridCell.tint = this.options.background;
+
+        this.grid[gridX][gridY] = gridCell;
+        this.gridHistory[gridX][gridY] = 0;
+
+        this.gridContainer.addChild(gridCell);
+      }
+    }
+
     for (let i = 0; i < this.options.number; i++) {
       const boid = new PIXI.Sprite(this.boidTexture);
+
       boid.x = Math.floor(Math.random() * maxX);
       boid.y = Math.floor(Math.random() * maxY);
+      
       boid.pivot.set(this.options.boidLength / 2, this.options.boidHeight)
       boid.anchor.set(0.5, 0.5)
       boid.rotation = Math.random() * Math.PI * 2;
+
       this.container.addChild(boid);
       this.boids.push(boid);
+
+      this.updateGridElement(boid.x, boid.y);
     }
 
     // Listen for animate update
     this.app.ticker.add((delta) => {
       this.stats.begin();
 
+      this.cooldownGrid();
       this.updateBoids(delta);
 
       this.stats.end();
     });
   }
 
+  private getGridColor(gridValue: number) {
+    const value = gridValue / this.gridMax;
+
+    const r = Math.round(255 * Math.sqrt(value)); 
+    const g = Math.round(255 * Math.pow(value,3)); 
+    const b = Math.round(255 * (Math.sin(2 * Math.PI * value) >= 0 ?
+                   Math.sin(2 * Math.PI * value) : 0 ));
+
+    return Renderer.rgbToDecimal(r, g, b);
+  }
+
+  private updateGridElement(boidX: number, boidY: number) {
+    // adjust x and y to the gridSize resolution
+    const x = Math.floor(boidX / this.options.gridSize);
+    const y = Math.floor(boidY / this.options.gridSize);
+
+    if (x < 0 || y < 0 || x >= this.grid.length || y >= this.grid[0].length) {
+      return;
+    }
+
+    this.gridHistory[x][y] += this.options.gridIncrease;
+    this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+
+    const tint = this.getGridColor(this.gridHistory[x][y]);
+
+    this.grid[x][y].tint = tint;
+  }
+
+  private cooldownGrid() {
+    for(let x = 0; x < this.gridHistory.length; x++ ) {
+      for(let y = 0; y < this.gridHistory[x].length; y++ ) {
+        this.gridHistory[x][y] = Math.max(0, this.gridHistory[x][y] - this.gridMax * this.options.gridAttenuation / 100000);
+        this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+        
+        const tint = this.getGridColor(this.gridHistory[x][y]);
+
+        this.grid[x][y].tint = tint;
+      }
+    }
+  }
+
   private updateBoids(delta: number) {
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
-    const children = this.boids.length;
+    const totalBoids = this.boids.length;
 
-    for (let i = 0; i < children; i++) {
+    for (let i = 0; i < totalBoids; i++) {
       const boid = this.boids[i];
 
       // Forces that determine flocking
@@ -99,7 +189,7 @@ export class Renderer {
       // const enemiesNear = [];
 
       // Iterate over the rest of the boids
-      for (let a = 0; a < children; a++) {
+      for (let a = 0; a < totalBoids; a++) {
         if (a === i) {
           continue;
         }
@@ -169,6 +259,8 @@ export class Renderer {
       boid.x -= dx * delta;
       boid.y += dy * delta;
 
+      this.updateGridElement(boid.x, boid.y);
+
       // Wrap around
       if (boid.x <= 0) {
         boid.x = maxX - 1;
@@ -193,6 +285,7 @@ export class Renderer {
       return 0;
     }
 
+    // [meanX, meanY] is the center of mass of the neighbours
     const meanX = Renderer.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.x);
     const meanY = Renderer.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.y);
 
@@ -222,5 +315,14 @@ export class Renderer {
     }
     result /= arr.length;
     return result;
+  }
+
+  private static componentToHex(c: number) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+  }
+  
+  private static rgbToDecimal(r: number, g: number, b: number): number {
+    return parseInt(Renderer.componentToHex(r) + Renderer.componentToHex(g) + Renderer.componentToHex(b), 16);
   }
 }

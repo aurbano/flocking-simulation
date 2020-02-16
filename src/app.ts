@@ -7,6 +7,11 @@ const options: Options = {
   boidLength: 5,
   boidHeight: 10,
   number: 350,
+  gridSize: 10,
+  background: 0x111111,
+
+  gridIncrease: 1,
+  gridAttenuation: 1,
 
   speed: 3,
 
