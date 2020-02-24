@@ -2,11 +2,7 @@ import * as PIXI from 'pixi.js';
 import Stats from 'stats.js';
 
 import { Options } from '../model/types';
-
-type Position = {
-  x: number,
-  y: number,
-};
+import { Util } from './util';
 
 export class Renderer {
   private app: PIXI.Application;
@@ -41,7 +37,7 @@ export class Renderer {
 
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
-    const gridItems = (maxX / this.options.gridSize) * (maxY / this.options.gridSize);
+    const gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
 
     this.gridContainer = new PIXI.ParticleContainer(gridItems, {
       position: false,
@@ -67,10 +63,10 @@ export class Renderer {
 
     // Prepare the grid texture
     graphics.beginFill(0xffffff);
-    graphics.lineStyle(1);
-    graphics.drawRect(0, 0, this.options.gridSize, this.options.gridSize);
+    graphics.lineStyle(0);
+    graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
     graphics.endFill();
-    region = new PIXI.Rectangle(0, 0, options.gridSize, options.gridSize);
+    region = new PIXI.Rectangle(0, 0, options.heatmapGridSize, options.heatmapGridSize);
     this.gridTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
 
     // Render the app
@@ -81,24 +77,27 @@ export class Renderer {
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
 
-    // initialize grid
-    for (let gridX = 0; gridX < maxX / this.options.gridSize; gridX++) {
-      this.grid[gridX] = [];
-      this.gridHistory[gridX] = [];
-
-      for (let gridY = 0; gridY < maxY / this.options.gridSize; gridY++) {
-        const gridCell = new PIXI.Sprite(this.gridTexture);
-        gridCell.x = gridX * this.options.gridSize;
-        gridCell.y = gridY * this.options.gridSize;
-        gridCell.tint = this.options.background;
-
-        this.grid[gridX][gridY] = gridCell;
-        this.gridHistory[gridX][gridY] = 0;
-
-        this.gridContainer.addChild(gridCell);
+    // Initialize heatmap grid
+    if (this.options.heatmap) {
+      for (let gridX = 0; gridX < maxX / this.options.heatmapGridSize; gridX++) {
+        this.grid[gridX] = [];
+        this.gridHistory[gridX] = [];
+  
+        for (let gridY = 0; gridY < maxY / this.options.heatmapGridSize; gridY++) {
+          const gridCell = new PIXI.Sprite(this.gridTexture);
+          gridCell.x = gridX * this.options.heatmapGridSize;
+          gridCell.y = gridY * this.options.heatmapGridSize;
+          gridCell.tint = this.options.background;
+  
+          this.grid[gridX][gridY] = gridCell;
+          this.gridHistory[gridX][gridY] = 0;
+  
+          this.gridContainer.addChild(gridCell);
+        }
       }
     }
 
+    // Initialize boids
     for (let i = 0; i < this.options.number; i++) {
       const boid = new PIXI.Sprite(this.boidTexture);
 
@@ -124,47 +123,6 @@ export class Renderer {
 
       this.stats.end();
     });
-  }
-
-  private getGridColor(gridValue: number) {
-    const value = gridValue / this.gridMax;
-
-    const r = Math.round(255 * Math.sqrt(value)); 
-    const g = Math.round(255 * Math.pow(value,3)); 
-    const b = Math.round(255 * (Math.sin(2 * Math.PI * value) >= 0 ?
-                   Math.sin(2 * Math.PI * value) : 0 ));
-
-    return Renderer.rgbToDecimal(r, g, b);
-  }
-
-  private updateGridElement(boidX: number, boidY: number) {
-    // adjust x and y to the gridSize resolution
-    const x = Math.floor(boidX / this.options.gridSize);
-    const y = Math.floor(boidY / this.options.gridSize);
-
-    if (x < 0 || y < 0 || x >= this.grid.length || y >= this.grid[0].length) {
-      return;
-    }
-
-    this.gridHistory[x][y] += this.options.gridIncrease;
-    this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
-
-    const tint = this.getGridColor(this.gridHistory[x][y]);
-
-    this.grid[x][y].tint = tint;
-  }
-
-  private cooldownGrid() {
-    for(let x = 0; x < this.gridHistory.length; x++ ) {
-      for(let y = 0; y < this.gridHistory[x].length; y++ ) {
-        this.gridHistory[x][y] = Math.max(0, this.gridHistory[x][y] - this.gridMax * this.options.gridAttenuation / 100000);
-        this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
-        
-        const tint = this.getGridColor(this.gridHistory[x][y]);
-
-        this.grid[x][y].tint = tint;
-      }
-    }
   }
 
   private updateBoids(delta: number) {
@@ -194,7 +152,7 @@ export class Renderer {
           continue;
         }
         const neighbour = this.boids[a];
-        const d = Renderer.distance(boid, neighbour);
+        const d = Util.distance(boid, neighbour);
 
         if (d < this.options.separationRadius) {
           separationNeighbours.push(neighbour);
@@ -211,7 +169,7 @@ export class Renderer {
 
       // Calculate forces
       if (separationNeighbours.length > 0) {
-        f_separation = Renderer.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
+        f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
       }
 
       if (alignmentNeighbours.length > 0) {
@@ -223,26 +181,20 @@ export class Renderer {
       }
 
       if (alignmentNeighbours.length > 0) {
-        f_alignment = Renderer.getNeighboursRotation(alignmentNeighbours, boid);
+        f_alignment = Util.getNeighboursRotation(alignmentNeighbours, boid);
       }
 
       if (cohesionNeighbours.length > 0) {
-        f_cohesion = Renderer.getNeighboursRotation(cohesionNeighbours, boid);
+        f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
       }
 
       // set the mouse as an enemy
       const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
-      const mouseDistance = Renderer.distance(mouseCoords, boid);
+      const mouseDistance = Util.distance(mouseCoords, boid);
       if (mouseDistance < this.options.predatorRadius) {
         boid.tint = 0xeb0000;
-        f_predators = Renderer.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+        f_predators = Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
       }
-
-      // REF:
-      // https://github.com/rafinskipg/birds/blob/master/app/scripts/models/birdsGenerator.js
-
-      // REF2
-      // Reynolds, Craig (1987). "Flocks, herds and schools: A distributed behavioral model.". SIGGRAPH '87: Proceedings of the 14th annual conference on Computer graphics and interactive techniques. Association for Computing Machinery
 
       // Calculate the new direction of flight
       boid.rotation = boid.rotation + 
@@ -276,53 +228,41 @@ export class Renderer {
     }
   }
 
-  private static random(min: number, max: number) {
-    return min + Math.random() * (max - min);
-  }
-
-  private static getNeighboursRotation(neighbours: Array<PIXI.Sprite>, boid: PIXI.Sprite) {
-    if (neighbours.length < 1) {
-      return 0;
+  private updateGridElement(boidX: number, boidY: number) {
+    if (!this.options.heatmap) {
+      return;
     }
 
-    // [meanX, meanY] is the center of mass of the neighbours
-    const meanX = Renderer.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.x);
-    const meanY = Renderer.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.y);
+    // adjust x and y to the heatmapGridSize resolution
+    const x = Math.floor(boidX / this.options.heatmapGridSize);
+    const y = Math.floor(boidY / this.options.heatmapGridSize);
 
-    return Renderer.getRotation(meanX, meanY, boid);
-  }
-
-  private static getRotation(meanX: number, meanY: number, boid: PIXI.Sprite) {
-    // Vector from boid to mean neighbours
-    const mean_dx = meanX - boid.x;
-    const mean_dy = meanY - boid.y;
-
-    // Diff between angle of the vector from boid to the mean neighbours and current direction
-    return Math.atan2(mean_dy, mean_dx) - boid.rotation;
-  }
-
-  private static distance(p1: Position, p2: Position) {
-    // Approximation by using octagons approach
-  	const dx = Math.abs(p2.x - p1.x);
-  	const dy = Math.abs(p2.y - p1.y);
-  	return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));	
-  }
-
-  private static arrayMean(arr: Array<any>, getKey: Function) {
-    let result = 0;
-    for (let i = 0; i < arr.length; i++) {
-        result += getKey(arr[i]);
+    if (x < 0 || y < 0 || x >= this.grid.length || y >= this.grid[0].length) {
+      return;
     }
-    result /= arr.length;
-    return result;
+
+    this.gridHistory[x][y] += this.options.heatmapIncrease;
+    this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+
+    const tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
+
+    this.grid[x][y].tint = tint;
   }
 
-  private static componentToHex(c: number) {
-    var hex = c.toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-  }
-  
-  private static rgbToDecimal(r: number, g: number, b: number): number {
-    return parseInt(Renderer.componentToHex(r) + Renderer.componentToHex(g) + Renderer.componentToHex(b), 16);
+  private cooldownGrid() {
+    if (!this.options.heatmap) {
+      return;
+    }
+    
+    for(let x = 0; x < this.gridHistory.length; x++ ) {
+      for(let y = 0; y < this.gridHistory[x].length; y++ ) {
+        this.gridHistory[x][y] = Math.max(0, this.gridHistory[x][y] - this.gridMax * this.options.heatmapAttenuation / 100000);
+        this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+        
+        const tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
+
+        this.grid[x][y].tint = tint;
+      }
+    }
   }
 }

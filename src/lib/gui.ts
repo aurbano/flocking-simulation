@@ -13,8 +13,8 @@ export function setupGui(options: Options) {
   
   const heatmap = gui.addFolder('Heatmap');
   heatmap.open();
-  heatmap.add(options, 'gridIncrease', 0, 100, 0.1);
-  heatmap.add(options, 'gridAttenuation', 0, 100, 1);
+  heatmap.add(options, 'heatmapIncrease', 0, 500, 0.1);
+  heatmap.add(options, 'heatmapAttenuation', 0, 1000, 1);
 
   const distances = gui.addFolder('Distances');
   distances.open();

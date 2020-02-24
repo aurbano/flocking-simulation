@@ -3,11 +3,12 @@ export type Options = {
   boidLength: number,
   boidHeight: number,
   number: number,
-  gridSize: number,
+  heatmapGridSize: number,
   background: number,
 
-  gridIncrease: number,
-  gridAttenuation: number,
+  heatmap: boolean,
+  heatmapIncrease: number,
+  heatmapAttenuation: number,
 
   speed: number,
 

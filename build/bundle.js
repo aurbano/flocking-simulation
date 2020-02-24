@@ -43528,6 +43528,57 @@ u(++l%c.children.length);},!1);var k=(performance||Date).now(),g=k,a=0,r=e(new f
 b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return {dom:q,update:function(h,w){c=Math.min(c,h);k=Math.max(k,h);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,r,m);b.fillStyle=f;b.fillText(g(h)+" "+e+" ("+g(c)+"-"+g(k)+")",t,v);b.drawImage(q,d+a,m,n-a,p,d,m,n-a,p);b.fillRect(d+n-a,m,a,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d+n-a,m,a,g((1-h/w)*p));}}};return f});
 });
 
+var Util = (function () {
+    function Util() {
+    }
+    Util.random = function (min, max) {
+        return min + Math.random() * (max - min);
+    };
+    Util.getNeighboursRotation = function (neighbours, boid) {
+        if (neighbours.length < 1) {
+            return 0;
+        }
+        var meanX = Util.arrayMean(neighbours, function (boid) { return boid.x; });
+        var meanY = Util.arrayMean(neighbours, function (boid) { return boid.y; });
+        return Util.getRotation(meanX, meanY, boid);
+    };
+    Util.getRotation = function (meanX, meanY, boid) {
+        var mean_dx = meanX - boid.x;
+        var mean_dy = meanY - boid.y;
+        return Math.atan2(mean_dy, mean_dx) - boid.rotation;
+    };
+    Util.distance = function (p1, p2) {
+        var dx = Math.abs(p2.x - p1.x);
+        var dy = Math.abs(p2.y - p1.y);
+        return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
+    };
+    Util.arrayMean = function (arr, getKey) {
+        var result = 0;
+        for (var i = 0; i < arr.length; i++) {
+            result += getKey(arr[i]);
+        }
+        result /= arr.length;
+        return result;
+    };
+    Util.componentToHex = function (c) {
+        var hex = c.toString(16);
+        return hex.length == 1 ? "0" + hex : hex;
+    };
+    Util.rgbToDecimal = function (r, g, b) {
+        return parseInt(Util.componentToHex(r) + Util.componentToHex(g) + Util.componentToHex(b), 16);
+    };
+    Util.heatmapColor = function (maxValue, currentValue) {
+        var value = currentValue / maxValue;
+        var r = Math.round(255 * Math.sqrt(value));
+        var g = Math.round(255 * Math.pow(value, 3));
+        var b = Math.round(255 * (Math.sin(2 * Math.PI * value) >= 0 ?
+            Math.sin(2 * Math.PI * value) : 0));
+        return Util.rgbToDecimal(r, g, b);
+    };
+    return Util;
+}());
+//# sourceMappingURL=util.js.map
+
 var Renderer = (function () {
     function Renderer(options) {
         this.options = options;
@@ -43551,7 +43602,7 @@ var Renderer = (function () {
         });
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
-        var gridItems = (maxX / this.options.gridSize) * (maxY / this.options.gridSize);
+        var gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
         this.gridContainer = new particles_1(gridItems, {
             position: false,
             rotation: false,
@@ -43572,10 +43623,10 @@ var Renderer = (function () {
         this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
         this.boidTexture.defaultAnchor.set(0.5, 0.5);
         graphics.beginFill(0xffffff);
-        graphics.lineStyle(1);
-        graphics.drawRect(0, 0, this.options.gridSize, this.options.gridSize);
+        graphics.lineStyle(0);
+        graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
         graphics.endFill();
-        region = new math_11(0, 0, options.gridSize, options.gridSize);
+        region = new math_11(0, 0, options.heatmapGridSize, options.heatmapGridSize);
         this.gridTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
         document.getElementById(this.options.containerId).appendChild(this.app.view);
     }
@@ -43583,17 +43634,19 @@ var Renderer = (function () {
         var _this = this;
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
-        for (var gridX = 0; gridX < maxX / this.options.gridSize; gridX++) {
-            this.grid[gridX] = [];
-            this.gridHistory[gridX] = [];
-            for (var gridY = 0; gridY < maxY / this.options.gridSize; gridY++) {
-                var gridCell = new sprite_1(this.gridTexture);
-                gridCell.x = gridX * this.options.gridSize;
-                gridCell.y = gridY * this.options.gridSize;
-                gridCell.tint = this.options.background;
-                this.grid[gridX][gridY] = gridCell;
-                this.gridHistory[gridX][gridY] = 0;
-                this.gridContainer.addChild(gridCell);
+        if (this.options.heatmap) {
+            for (var gridX = 0; gridX < maxX / this.options.heatmapGridSize; gridX++) {
+                this.grid[gridX] = [];
+                this.gridHistory[gridX] = [];
+                for (var gridY = 0; gridY < maxY / this.options.heatmapGridSize; gridY++) {
+                    var gridCell = new sprite_1(this.gridTexture);
+                    gridCell.x = gridX * this.options.heatmapGridSize;
+                    gridCell.y = gridY * this.options.heatmapGridSize;
+                    gridCell.tint = this.options.background;
+                    this.grid[gridX][gridY] = gridCell;
+                    this.gridHistory[gridX][gridY] = 0;
+                    this.gridContainer.addChild(gridCell);
+                }
             }
         }
         for (var i = 0; i < this.options.number; i++) {
@@ -43614,35 +43667,6 @@ var Renderer = (function () {
             _this.stats.end();
         });
     };
-    Renderer.prototype.getGridColor = function (gridValue) {
-        var value = gridValue / this.gridMax;
-        var r = Math.round(255 * Math.sqrt(value));
-        var g = Math.round(255 * Math.pow(value, 3));
-        var b = Math.round(255 * (Math.sin(2 * Math.PI * value) >= 0 ?
-            Math.sin(2 * Math.PI * value) : 0));
-        return Renderer.rgbToDecimal(r, g, b);
-    };
-    Renderer.prototype.updateGridElement = function (boidX, boidY) {
-        var x = Math.floor(boidX / this.options.gridSize);
-        var y = Math.floor(boidY / this.options.gridSize);
-        if (x < 0 || y < 0 || x >= this.grid.length || y >= this.grid[0].length) {
-            return;
-        }
-        this.gridHistory[x][y] += this.options.gridIncrease;
-        this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
-        var tint = this.getGridColor(this.gridHistory[x][y]);
-        this.grid[x][y].tint = tint;
-    };
-    Renderer.prototype.cooldownGrid = function () {
-        for (var x = 0; x < this.gridHistory.length; x++) {
-            for (var y = 0; y < this.gridHistory[x].length; y++) {
-                this.gridHistory[x][y] = Math.max(0, this.gridHistory[x][y] - this.gridMax * this.options.gridAttenuation / 100000);
-                this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
-                var tint = this.getGridColor(this.gridHistory[x][y]);
-                this.grid[x][y].tint = tint;
-            }
-        }
-    };
     Renderer.prototype.updateBoids = function (delta) {
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
@@ -43662,7 +43686,7 @@ var Renderer = (function () {
                     continue;
                 }
                 var neighbour = this.boids[a];
-                var d = Renderer.distance(boid, neighbour);
+                var d = Util.distance(boid, neighbour);
                 if (d < this.options.separationRadius) {
                     separationNeighbours.push(neighbour);
                 }
@@ -43675,7 +43699,7 @@ var Renderer = (function () {
             }
             boid.tint = 0xcccccc;
             if (separationNeighbours.length > 0) {
-                f_separation = Renderer.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
+                f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
             }
             if (alignmentNeighbours.length > 0) {
                 boid.tint = 0x9dd60b;
@@ -43684,16 +43708,16 @@ var Renderer = (function () {
                 boid.tint = 0xaaaaaa;
             }
             if (alignmentNeighbours.length > 0) {
-                f_alignment = Renderer.getNeighboursRotation(alignmentNeighbours, boid);
+                f_alignment = Util.getNeighboursRotation(alignmentNeighbours, boid);
             }
             if (cohesionNeighbours.length > 0) {
-                f_cohesion = Renderer.getNeighboursRotation(cohesionNeighbours, boid);
+                f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
             }
             var mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
-            var mouseDistance = Renderer.distance(mouseCoords, boid);
+            var mouseDistance = Util.distance(mouseCoords, boid);
             if (mouseDistance < this.options.predatorRadius) {
                 boid.tint = 0xeb0000;
-                f_predators = Renderer.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+                f_predators = Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
             }
             boid.rotation = boid.rotation +
                 this.options.cohesionForce * f_cohesion / 100 +
@@ -43720,44 +43744,36 @@ var Renderer = (function () {
             }
         }
     };
-    Renderer.random = function (min, max) {
-        return min + Math.random() * (max - min);
-    };
-    Renderer.getNeighboursRotation = function (neighbours, boid) {
-        if (neighbours.length < 1) {
-            return 0;
+    Renderer.prototype.updateGridElement = function (boidX, boidY) {
+        if (!this.options.heatmap) {
+            return;
         }
-        var meanX = Renderer.arrayMean(neighbours, function (boid) { return boid.x; });
-        var meanY = Renderer.arrayMean(neighbours, function (boid) { return boid.y; });
-        return Renderer.getRotation(meanX, meanY, boid);
-    };
-    Renderer.getRotation = function (meanX, meanY, boid) {
-        var mean_dx = meanX - boid.x;
-        var mean_dy = meanY - boid.y;
-        return Math.atan2(mean_dy, mean_dx) - boid.rotation;
-    };
-    Renderer.distance = function (p1, p2) {
-        var dx = Math.abs(p2.x - p1.x);
-        var dy = Math.abs(p2.y - p1.y);
-        return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
-    };
-    Renderer.arrayMean = function (arr, getKey) {
-        var result = 0;
-        for (var i = 0; i < arr.length; i++) {
-            result += getKey(arr[i]);
+        var x = Math.floor(boidX / this.options.heatmapGridSize);
+        var y = Math.floor(boidY / this.options.heatmapGridSize);
+        if (x < 0 || y < 0 || x >= this.grid.length || y >= this.grid[0].length) {
+            return;
         }
-        result /= arr.length;
-        return result;
+        this.gridHistory[x][y] += this.options.heatmapIncrease;
+        this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+        var tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
+        this.grid[x][y].tint = tint;
     };
-    Renderer.componentToHex = function (c) {
-        var hex = c.toString(16);
-        return hex.length == 1 ? "0" + hex : hex;
-    };
-    Renderer.rgbToDecimal = function (r, g, b) {
-        return parseInt(Renderer.componentToHex(r) + Renderer.componentToHex(g) + Renderer.componentToHex(b), 16);
+    Renderer.prototype.cooldownGrid = function () {
+        if (!this.options.heatmap) {
+            return;
+        }
+        for (var x = 0; x < this.gridHistory.length; x++) {
+            for (var y = 0; y < this.gridHistory[x].length; y++) {
+                this.gridHistory[x][y] = Math.max(0, this.gridHistory[x][y] - this.gridMax * this.options.heatmapAttenuation / 100000);
+                this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+                var tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
+                this.grid[x][y].tint = tint;
+            }
+        }
     };
     return Renderer;
 }());
+//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46264,8 +46280,8 @@ function setupGui(options) {
     general.add(options, 'speed', 0, 25, 1);
     var heatmap = gui.addFolder('Heatmap');
     heatmap.open();
-    heatmap.add(options, 'gridIncrease', 0, 100, 0.1);
-    heatmap.add(options, 'gridAttenuation', 0, 100, 1);
+    heatmap.add(options, 'heatmapIncrease', 0, 500, 0.1);
+    heatmap.add(options, 'heatmapAttenuation', 0, 1000, 1);
     var distances = gui.addFolder('Distances');
     distances.open();
     distances.add(options, 'cohesionRadius', 0, 500, 1);
@@ -46281,17 +46297,17 @@ function setupGui(options) {
     forces.add(options, 'obstacleForce', 0, 100, 1);
     return gui;
 }
-//# sourceMappingURL=gui.js.map
 
 var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: 350,
-    gridSize: 10,
+    number: 50,
+    heatmapGridSize: 10,
     background: 0x111111,
-    gridIncrease: 1,
-    gridAttenuation: 1,
+    heatmap: false,
+    heatmapIncrease: 1,
+    heatmapAttenuation: 1,
     speed: 3,
     cohesionRadius: 130,
     alignmentRadius: 25,
