@@ -10,6 +10,7 @@ export function setupGui(options: Options) {
   const general = gui.addFolder('General');
   general.open();
   general.add(options, 'speed', 0, 25, 1);
+  general.add(options, 'visionAngle', 0, 180, 1);
   
   const heatmap = gui.addFolder('Heatmap');
   heatmap.open();

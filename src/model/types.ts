@@ -5,12 +5,15 @@ export type Options = {
   number: number,
   heatmapGridSize: number,
   background: number,
+  debug?: boolean,
 
   heatmap: boolean,
   heatmapIncrease: number,
   heatmapAttenuation: number,
 
   speed: number,
+
+  visionAngle: number,
 
   cohesionRadius: number,
   separationRadius: number,

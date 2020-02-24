@@ -43579,6 +43579,12 @@ var Util = (function () {
 }());
 //# sourceMappingURL=util.js.map
 
+var COLORS = {
+    COHESION: 0xCCCCCC,
+    ALIGNMENT: 0x9dd60b,
+    SEPARATION: 0xeb0000,
+    NONE: 0x999999,
+};
 var Renderer = (function () {
     function Renderer(options) {
         this.options = options;
@@ -43595,11 +43601,7 @@ var Renderer = (function () {
         this.stats = new stats_min();
         this.stats.showPanel(0);
         document.body.appendChild(this.stats.dom);
-        this.boidContainer = new particles_1(this.options.number, {
-            position: true,
-            rotation: true,
-            tint: true,
-        });
+        this.boidContainer = new display_2();
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
         var gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
@@ -43659,6 +43661,19 @@ var Renderer = (function () {
             this.boidContainer.addChild(boid);
             this.boids.push(boid);
             this.updateHeatmapCell(boid.x, boid.y);
+            if (this.options.debug) {
+                var visionAngle = this.options.visionAngle * Math.PI / 180;
+                var graphics = new graphics_3();
+                graphics.beginFill(COLORS.ALIGNMENT, 0.2);
+                graphics.arc(0, 0, this.options.alignmentRadius, -visionAngle, visionAngle);
+                graphics.endFill();
+                graphics.lineStyle(1, COLORS.COHESION, 0.25);
+                graphics.drawCircle(0, 0, this.options.cohesionRadius);
+                graphics.lineStyle(1, COLORS.SEPARATION, 0.25);
+                graphics.drawCircle(0, 0, this.options.separationRadius);
+                graphics.name = 'circles';
+                boid.addChild(graphics);
+            }
         }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
@@ -43671,8 +43686,12 @@ var Renderer = (function () {
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
         var totalBoids = this.boids.length;
+        var visionAngle = this.options.visionAngle * Math.PI / 180;
         for (var i = 0; i < totalBoids; i++) {
             var boid = this.boids[i];
+            if (boid.children.length > 1) {
+                boid.removeChildAt(1);
+            }
             var f_cohesion = 0;
             var f_separation = 0;
             var f_alignment = 0;
@@ -43681,42 +43700,57 @@ var Renderer = (function () {
             var cohesionNeighbours = [];
             var separationNeighbours = [];
             var alignmentNeighbours = [];
+            var graphics = new graphics_3();
+            var shouldRenderDebug = false;
             for (var a = 0; a < totalBoids; a++) {
                 if (a === i) {
                     continue;
                 }
                 var neighbour = this.boids[a];
+                var neighbourCoords = boid.toLocal(new math_8(0, 0), neighbour);
                 var d = Util.distance(boid, neighbour);
                 if (d < this.options.separationRadius) {
                     separationNeighbours.push(neighbour);
+                    shouldRenderDebug = true;
+                    graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+                    graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
                 }
                 if (d < this.options.alignmentRadius) {
                     alignmentNeighbours.push(neighbour);
+                    shouldRenderDebug = true;
+                    graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+                    graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
                 }
                 if (d < this.options.cohesionRadius) {
                     cohesionNeighbours.push(neighbour);
+                    shouldRenderDebug = true;
+                    graphics.lineStyle(1, COLORS.COHESION, 0.3);
+                    graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
                 }
+            }
+            if (this.options.debug && shouldRenderDebug) {
+                boid.addChild(graphics);
             }
             boid.tint = 0xcccccc;
             if (separationNeighbours.length > 0) {
+                boid.tint = COLORS.SEPARATION;
                 f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
             }
             if (alignmentNeighbours.length > 0) {
-                boid.tint = 0x9dd60b;
-            }
-            if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
-                boid.tint = 0xaaaaaa;
-            }
-            if (alignmentNeighbours.length > 0) {
+                boid.tint = COLORS.ALIGNMENT;
                 f_alignment = Util.getNeighboursRotation(alignmentNeighbours, boid);
             }
             if (cohesionNeighbours.length > 0) {
+                boid.tint = COLORS.COHESION;
                 f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
+            }
+            if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
+                boid.tint = COLORS.NONE;
             }
             var mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
             var mouseDistance = Util.distance(mouseCoords, boid);
             if (mouseDistance < this.options.predatorRadius) {
-                boid.tint = 0xeb0000;
+                boid.tint = COLORS.SEPARATION;
                 f_predators = Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
             }
             boid.rotation = boid.rotation +
@@ -46277,6 +46311,7 @@ function setupGui(options) {
     var general = gui.addFolder('General');
     general.open();
     general.add(options, 'speed', 0, 25, 1);
+    general.add(options, 'visionAngle', 0, 180, 1);
     var heatmap = gui.addFolder('Heatmap');
     heatmap.open();
     heatmap.add(options, 'heatmapIncrease', 0, 500, 0.1);
@@ -46302,18 +46337,20 @@ var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: 50,
+    number: 5,
     heatmapGridSize: 10,
     background: 0x111111,
+    debug: true,
     heatmap: false,
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
-    speed: 3,
-    cohesionRadius: 130,
-    alignmentRadius: 25,
-    separationRadius: 10,
-    predatorRadius: 150,
-    cohesionForce: 10,
+    speed: 1,
+    visionAngle: 45,
+    cohesionRadius: 400,
+    alignmentRadius: 60,
+    separationRadius: 20,
+    predatorRadius: 0,
+    cohesionForce: 5,
     separationForce: 25,
     alignmentForce: 50,
     predatorForce: 60,

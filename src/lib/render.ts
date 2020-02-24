@@ -4,12 +4,19 @@ import Stats from 'stats.js';
 import { Options } from '../model/types';
 import { Util } from './util';
 
+const COLORS = {
+  COHESION: 0xCCCCCC,
+  ALIGNMENT: 0x9dd60b,
+  SEPARATION: 0xeb0000,
+  NONE: 0x999999,
+};
+
 export class Renderer {
   private app: PIXI.Application;
 
   private boids: PIXI.Sprite[] = [];
   private boidTexture: PIXI.Texture;
-  private boidContainer: PIXI.ParticleContainer;
+  private boidContainer: PIXI.Container;
 
   private heatmapTexture: PIXI.Texture;
   private heatmapContainer: PIXI.ParticleContainer;
@@ -31,11 +38,13 @@ export class Renderer {
     this.stats.showPanel(0);
     document.body.appendChild( this.stats.dom );
 
-    this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
-      position: true,
-      rotation: true,
-      tint: true,
-    });
+    // this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
+    //   position: true,
+    //   rotation: true,
+    //   tint: true,
+    // });
+
+    this.boidContainer = new PIXI.Container();
 
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
@@ -106,14 +115,34 @@ export class Renderer {
       boid.x = Math.floor(Math.random() * maxX);
       boid.y = Math.floor(Math.random() * maxY);
       
-      boid.pivot.set(this.options.boidLength / 2, this.options.boidHeight)
-      boid.anchor.set(0.5, 0.5)
+      boid.pivot.set(this.options.boidLength / 2, this.options.boidHeight);
+      boid.anchor.set(0.5, 0.5);
       boid.rotation = Math.random() * Math.PI * 2;
 
       this.boidContainer.addChild(boid);
       this.boids.push(boid);
 
       this.updateHeatmapCell(boid.x, boid.y);
+
+      // Add debug graphics
+      if (this.options.debug) {
+        const visionAngle = this.options.visionAngle * Math.PI / 180;
+
+        const graphics = new PIXI.Graphics();
+        graphics.beginFill(COLORS.ALIGNMENT, 0.2)
+        graphics.arc(0, 0, this.options.alignmentRadius, -visionAngle, visionAngle);
+        graphics.endFill();
+  
+        graphics.lineStyle(1, COLORS.COHESION, 0.25)
+        graphics.drawCircle(0, 0, this.options.cohesionRadius);
+  
+        graphics.lineStyle(1, COLORS.SEPARATION, 0.25)
+        graphics.drawCircle(0, 0, this.options.separationRadius);
+  
+        graphics.name = 'circles';
+  
+        boid.addChild(graphics);
+      }
     }
 
     // Listen for animate update
@@ -132,8 +161,15 @@ export class Renderer {
     const maxY = this.app.screen.height;
     const totalBoids = this.boids.length;
 
+    const visionAngle = this.options.visionAngle * Math.PI / 180;
+
     for (let i = 0; i < totalBoids; i++) {
       const boid = this.boids[i];
+
+      // remove potential child debugging lines
+      if (boid.children.length > 1) {
+        boid.removeChildAt(1);
+      }
 
       // Forces that determine flocking
       let f_cohesion: number = 0;   // steer towards average position of neighbours (long range attraction)
@@ -148,53 +184,89 @@ export class Renderer {
       const alignmentNeighbours: PIXI.Sprite[] = [];
       // const enemiesNear = [];
 
+      const graphics = new PIXI.Graphics();
+      let shouldRenderDebug = false;
+
       // Iterate over the rest of the boids
       for (let a = 0; a < totalBoids; a++) {
         if (a === i) {
           continue;
         }
         const neighbour = this.boids[a];
+        const neighbourCoords = boid.toLocal(
+          new PIXI.Point(
+            0,
+            0
+          ),
+          neighbour
+        );
+
+        // angle to each neighbour
+        // const neighbourAngle = Math.atan2(neighbour.y - boid.y, neighbour.x - boid.x);
+        // const angleFromDirection = boid.rotation - neighbourAngle;
+
+        // if (angleFromDirection > visionAngle || angleFromDirection < -visionAngle) {
+        //   continue;
+        // }
+
         const d = Util.distance(boid, neighbour);
 
         if (d < this.options.separationRadius) {
           separationNeighbours.push(neighbour);
+
+          shouldRenderDebug = true;
+          graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+          graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
         }
+
         if (d < this.options.alignmentRadius) {
           alignmentNeighbours.push(neighbour);
+
+          shouldRenderDebug = true;
+          graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+          graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
         }
+
         if (d < this.options.cohesionRadius) {
           cohesionNeighbours.push(neighbour);
+
+          shouldRenderDebug = true;
+          graphics.lineStyle(1, COLORS.COHESION, 0.3);
+          graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
         }  
+      }
+
+      if (this.options.debug && shouldRenderDebug) {
+        boid.addChild(graphics);
       }
 
       boid.tint = 0xcccccc;
 
       // Calculate forces
       if (separationNeighbours.length > 0) {
+        boid.tint = COLORS.SEPARATION;
         f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
       }
 
       if (alignmentNeighbours.length > 0) {
-        boid.tint = 0x9dd60b;
-      }
-
-      if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
-        boid.tint = 0xaaaaaa;
-      }
-
-      if (alignmentNeighbours.length > 0) {
+        boid.tint = COLORS.ALIGNMENT;
         f_alignment = Util.getNeighboursRotation(alignmentNeighbours, boid);
       }
 
       if (cohesionNeighbours.length > 0) {
+        boid.tint = COLORS.COHESION;
         f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
+      }
+
+      if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
+        boid.tint = COLORS.NONE;
       }
 
       // set the mouse as an enemy
       const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
       const mouseDistance = Util.distance(mouseCoords, boid);
       if (mouseDistance < this.options.predatorRadius) {
-        boid.tint = 0xeb0000;
+        boid.tint = COLORS.SEPARATION;
         f_predators = Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
       }
 
