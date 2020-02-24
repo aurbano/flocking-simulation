@@ -43583,9 +43583,9 @@ var Renderer = (function () {
     function Renderer(options) {
         this.options = options;
         this.boids = [];
-        this.grid = [];
-        this.gridHistory = [];
-        this.gridMax = 10;
+        this.heatmapCells = [];
+        this.heatmapHistory = [];
+        this.heatmapMax = 10;
         this.app = new app_1({
             resizeTo: window,
             resolution: devicePixelRatio,
@@ -43595,7 +43595,7 @@ var Renderer = (function () {
         this.stats = new stats_min();
         this.stats.showPanel(0);
         document.body.appendChild(this.stats.dom);
-        this.container = new particles_1(this.options.number, {
+        this.boidContainer = new particles_1(this.options.number, {
             position: true,
             rotation: true,
             tint: true,
@@ -43603,13 +43603,13 @@ var Renderer = (function () {
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
         var gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
-        this.gridContainer = new particles_1(gridItems, {
+        this.heatmapContainer = new particles_1(gridItems, {
             position: false,
             rotation: false,
             tint: true,
         });
-        this.app.stage.addChild(this.gridContainer);
-        this.app.stage.addChild(this.container);
+        this.app.stage.addChild(this.heatmapContainer);
+        this.app.stage.addChild(this.boidContainer);
         var graphics = new graphics_3();
         graphics.beginFill(0xcccccc);
         graphics.lineStyle(0);
@@ -43627,7 +43627,7 @@ var Renderer = (function () {
         graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
         graphics.endFill();
         region = new math_11(0, 0, options.heatmapGridSize, options.heatmapGridSize);
-        this.gridTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+        this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
         document.getElementById(this.options.containerId).appendChild(this.app.view);
     }
     Renderer.prototype.start = function () {
@@ -43636,16 +43636,16 @@ var Renderer = (function () {
         var maxY = this.app.screen.height;
         if (this.options.heatmap) {
             for (var gridX = 0; gridX < maxX / this.options.heatmapGridSize; gridX++) {
-                this.grid[gridX] = [];
-                this.gridHistory[gridX] = [];
+                this.heatmapCells[gridX] = [];
+                this.heatmapHistory[gridX] = [];
                 for (var gridY = 0; gridY < maxY / this.options.heatmapGridSize; gridY++) {
-                    var gridCell = new sprite_1(this.gridTexture);
+                    var gridCell = new sprite_1(this.heatmapTexture);
                     gridCell.x = gridX * this.options.heatmapGridSize;
                     gridCell.y = gridY * this.options.heatmapGridSize;
                     gridCell.tint = this.options.background;
-                    this.grid[gridX][gridY] = gridCell;
-                    this.gridHistory[gridX][gridY] = 0;
-                    this.gridContainer.addChild(gridCell);
+                    this.heatmapCells[gridX][gridY] = gridCell;
+                    this.heatmapHistory[gridX][gridY] = 0;
+                    this.heatmapContainer.addChild(gridCell);
                 }
             }
         }
@@ -43656,13 +43656,13 @@ var Renderer = (function () {
             boid.pivot.set(this.options.boidLength / 2, this.options.boidHeight);
             boid.anchor.set(0.5, 0.5);
             boid.rotation = Math.random() * Math.PI * 2;
-            this.container.addChild(boid);
+            this.boidContainer.addChild(boid);
             this.boids.push(boid);
-            this.updateGridElement(boid.x, boid.y);
+            this.updateHeatmapCell(boid.x, boid.y);
         }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
-            _this.cooldownGrid();
+            _this.cooldownHeatmap();
             _this.updateBoids(delta);
             _this.stats.end();
         });
@@ -43729,7 +43729,7 @@ var Renderer = (function () {
             var dy = Math.cos(boid.rotation) * this.options.speed;
             boid.x -= dx * delta;
             boid.y += dy * delta;
-            this.updateGridElement(boid.x, boid.y);
+            this.updateHeatmapCell(boid.x, boid.y);
             if (boid.x <= 0) {
                 boid.x = maxX - 1;
             }
@@ -43744,36 +43744,35 @@ var Renderer = (function () {
             }
         }
     };
-    Renderer.prototype.updateGridElement = function (boidX, boidY) {
+    Renderer.prototype.updateHeatmapCell = function (boidX, boidY) {
         if (!this.options.heatmap) {
             return;
         }
         var x = Math.floor(boidX / this.options.heatmapGridSize);
         var y = Math.floor(boidY / this.options.heatmapGridSize);
-        if (x < 0 || y < 0 || x >= this.grid.length || y >= this.grid[0].length) {
+        if (x < 0 || y < 0 || x >= this.heatmapCells.length || y >= this.heatmapCells[0].length) {
             return;
         }
-        this.gridHistory[x][y] += this.options.heatmapIncrease;
-        this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
-        var tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
-        this.grid[x][y].tint = tint;
+        this.heatmapHistory[x][y] += this.options.heatmapIncrease;
+        this.heatmapMax = Math.max(this.heatmapMax, this.heatmapHistory[x][y]);
+        var tint = Util.heatmapColor(this.heatmapMax, this.heatmapHistory[x][y]);
+        this.heatmapCells[x][y].tint = tint;
     };
-    Renderer.prototype.cooldownGrid = function () {
+    Renderer.prototype.cooldownHeatmap = function () {
         if (!this.options.heatmap) {
             return;
         }
-        for (var x = 0; x < this.gridHistory.length; x++) {
-            for (var y = 0; y < this.gridHistory[x].length; y++) {
-                this.gridHistory[x][y] = Math.max(0, this.gridHistory[x][y] - this.gridMax * this.options.heatmapAttenuation / 100000);
-                this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
-                var tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
-                this.grid[x][y].tint = tint;
+        for (var x = 0; x < this.heatmapHistory.length; x++) {
+            for (var y = 0; y < this.heatmapHistory[x].length; y++) {
+                this.heatmapHistory[x][y] = Math.max(0, this.heatmapHistory[x][y] - this.heatmapMax * this.options.heatmapAttenuation / 100000);
+                this.heatmapMax = Math.max(this.heatmapMax, this.heatmapHistory[x][y]);
+                var tint = Util.heatmapColor(this.heatmapMax, this.heatmapHistory[x][y]);
+                this.heatmapCells[x][y].tint = tint;
             }
         }
     };
     return Renderer;
 }());
-//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46297,6 +46296,7 @@ function setupGui(options) {
     forces.add(options, 'obstacleForce', 0, 100, 1);
     return gui;
 }
+//# sourceMappingURL=gui.js.map
 
 var options = {
     containerId: 'flock',

@@ -6,16 +6,18 @@ import { Util } from './util';
 
 export class Renderer {
   private app: PIXI.Application;
-  private container: PIXI.ParticleContainer;
-  private gridContainer: PIXI.ParticleContainer;
-  private boidTexture: PIXI.Texture;
-  private gridTexture: PIXI.Texture;
-  private stats: Stats;
 
   private boids: PIXI.Sprite[] = [];
-  private grid: PIXI.Sprite[][] = [];
-  private gridHistory: number[][] = [];
-  private gridMax: number = 10;
+  private boidTexture: PIXI.Texture;
+  private boidContainer: PIXI.ParticleContainer;
+
+  private heatmapTexture: PIXI.Texture;
+  private heatmapContainer: PIXI.ParticleContainer;
+  private heatmapCells: PIXI.Sprite[][] = [];
+  private heatmapHistory: number[][] = [];
+  private heatmapMax: number = 10;
+
+  private stats: Stats;
 
   constructor(private options: Options) {
     this.app = new PIXI.Application({
@@ -29,7 +31,7 @@ export class Renderer {
     this.stats.showPanel(0);
     document.body.appendChild( this.stats.dom );
 
-    this.container = new PIXI.ParticleContainer(this.options.number, {
+    this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
       position: true,
       rotation: true,
       tint: true,
@@ -39,13 +41,13 @@ export class Renderer {
     const maxY = this.app.screen.height;
     const gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
 
-    this.gridContainer = new PIXI.ParticleContainer(gridItems, {
+    this.heatmapContainer = new PIXI.ParticleContainer(gridItems, {
       position: false,
       rotation: false,
       tint: true,
     });
-    this.app.stage.addChild(this.gridContainer);
-    this.app.stage.addChild(this.container);
+    this.app.stage.addChild(this.heatmapContainer);
+    this.app.stage.addChild(this.boidContainer);
 
     // Prepare the boid texture for sprites
     const graphics = new PIXI.Graphics();
@@ -67,7 +69,7 @@ export class Renderer {
     graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
     graphics.endFill();
     region = new PIXI.Rectangle(0, 0, options.heatmapGridSize, options.heatmapGridSize);
-    this.gridTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+    this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
 
     // Render the app
     document.getElementById(this.options.containerId).appendChild(this.app.view);
@@ -80,19 +82,19 @@ export class Renderer {
     // Initialize heatmap grid
     if (this.options.heatmap) {
       for (let gridX = 0; gridX < maxX / this.options.heatmapGridSize; gridX++) {
-        this.grid[gridX] = [];
-        this.gridHistory[gridX] = [];
+        this.heatmapCells[gridX] = [];
+        this.heatmapHistory[gridX] = [];
   
         for (let gridY = 0; gridY < maxY / this.options.heatmapGridSize; gridY++) {
-          const gridCell = new PIXI.Sprite(this.gridTexture);
+          const gridCell = new PIXI.Sprite(this.heatmapTexture);
           gridCell.x = gridX * this.options.heatmapGridSize;
           gridCell.y = gridY * this.options.heatmapGridSize;
           gridCell.tint = this.options.background;
   
-          this.grid[gridX][gridY] = gridCell;
-          this.gridHistory[gridX][gridY] = 0;
+          this.heatmapCells[gridX][gridY] = gridCell;
+          this.heatmapHistory[gridX][gridY] = 0;
   
-          this.gridContainer.addChild(gridCell);
+          this.heatmapContainer.addChild(gridCell);
         }
       }
     }
@@ -108,17 +110,17 @@ export class Renderer {
       boid.anchor.set(0.5, 0.5)
       boid.rotation = Math.random() * Math.PI * 2;
 
-      this.container.addChild(boid);
+      this.boidContainer.addChild(boid);
       this.boids.push(boid);
 
-      this.updateGridElement(boid.x, boid.y);
+      this.updateHeatmapCell(boid.x, boid.y);
     }
 
     // Listen for animate update
     this.app.ticker.add((delta) => {
       this.stats.begin();
 
-      this.cooldownGrid();
+      this.cooldownHeatmap();
       this.updateBoids(delta);
 
       this.stats.end();
@@ -211,7 +213,7 @@ export class Renderer {
       boid.x -= dx * delta;
       boid.y += dy * delta;
 
-      this.updateGridElement(boid.x, boid.y);
+      this.updateHeatmapCell(boid.x, boid.y);
 
       // Wrap around
       if (boid.x <= 0) {
@@ -228,7 +230,7 @@ export class Renderer {
     }
   }
 
-  private updateGridElement(boidX: number, boidY: number) {
+  private updateHeatmapCell(boidX: number, boidY: number) {
     if (!this.options.heatmap) {
       return;
     }
@@ -237,31 +239,30 @@ export class Renderer {
     const x = Math.floor(boidX / this.options.heatmapGridSize);
     const y = Math.floor(boidY / this.options.heatmapGridSize);
 
-    if (x < 0 || y < 0 || x >= this.grid.length || y >= this.grid[0].length) {
+    if (x < 0 || y < 0 || x >= this.heatmapCells.length || y >= this.heatmapCells[0].length) {
       return;
     }
 
-    this.gridHistory[x][y] += this.options.heatmapIncrease;
-    this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+    this.heatmapHistory[x][y] += this.options.heatmapIncrease;
+    this.heatmapMax = Math.max(this.heatmapMax, this.heatmapHistory[x][y]);
 
-    const tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
-
-    this.grid[x][y].tint = tint;
+    const tint = Util.heatmapColor(this.heatmapMax, this.heatmapHistory[x][y]);
+    this.heatmapCells[x][y].tint = tint;
   }
 
-  private cooldownGrid() {
+  private cooldownHeatmap() {
     if (!this.options.heatmap) {
       return;
     }
     
-    for(let x = 0; x < this.gridHistory.length; x++ ) {
-      for(let y = 0; y < this.gridHistory[x].length; y++ ) {
-        this.gridHistory[x][y] = Math.max(0, this.gridHistory[x][y] - this.gridMax * this.options.heatmapAttenuation / 100000);
-        this.gridMax = Math.max(this.gridMax, this.gridHistory[x][y]);
+    for(let x = 0; x < this.heatmapHistory.length; x++ ) {
+      for(let y = 0; y < this.heatmapHistory[x].length; y++ ) {
+        this.heatmapHistory[x][y] = Math.max(0, this.heatmapHistory[x][y] - this.heatmapMax * this.options.heatmapAttenuation / 100000);
+        this.heatmapMax = Math.max(this.heatmapMax, this.heatmapHistory[x][y]);
         
-        const tint = Util.heatmapColor(this.gridMax, this.gridHistory[x][y]);
+        const tint = Util.heatmapColor(this.heatmapMax, this.heatmapHistory[x][y]);
 
-        this.grid[x][y].tint = tint;
+        this.heatmapCells[x][y].tint = tint;
       }
     }
   }
