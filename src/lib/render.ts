@@ -11,6 +11,14 @@ const COLORS = {
   NONE: 0x999999,
 };
 
+const textStyle = new PIXI.TextStyle({
+  fontFamily: 'Arial',
+  fontSize: 14,
+  fill: '#ffffff',
+  wordWrap: true,
+  wordWrapWidth: 440,
+});
+
 export class Renderer {
   private app: PIXI.Application;
 
@@ -129,19 +137,23 @@ export class Renderer {
         const visionAngle = this.options.visionAngle * Math.PI / 180;
 
         const graphics = new PIXI.Graphics();
-        graphics.beginFill(COLORS.ALIGNMENT, 0.2)
+        graphics.beginFill(COLORS.ALIGNMENT, 0.1)
         graphics.arc(0, 0, this.options.alignmentRadius, -visionAngle, visionAngle);
         graphics.endFill();
   
-        graphics.lineStyle(1, COLORS.COHESION, 0.25)
+        graphics.lineStyle(1, COLORS.COHESION, 0.1)
         graphics.drawCircle(0, 0, this.options.cohesionRadius);
   
-        graphics.lineStyle(1, COLORS.SEPARATION, 0.25)
+        graphics.lineStyle(1, COLORS.SEPARATION, 0.1)
         graphics.drawCircle(0, 0, this.options.separationRadius);
   
         graphics.name = 'circles';
+
+        const boidInfo = new PIXI.Text('boid ' + i, textStyle);
+        boidInfo.visible = false;
+        boid.addChild(boidInfo);
   
-        boid.addChild(graphics);
+        boid.addChild(graphics, boidInfo);
       }
     }
 
@@ -167,8 +179,11 @@ export class Renderer {
       const boid = this.boids[i];
 
       // remove potential child debugging lines
-      if (boid.children.length > 1) {
-        boid.removeChildAt(1);
+      const debugNeighboursChild = boid.getChildByName('neighbours');
+      if (debugNeighboursChild) {
+        boid.removeChild(
+          debugNeighboursChild
+        );
       }
 
       // Forces that determine flocking
@@ -185,6 +200,7 @@ export class Renderer {
       // const enemiesNear = [];
 
       const graphics = new PIXI.Graphics();
+      graphics.name = 'neighbours';
       let shouldRenderDebug = false;
 
       // Iterate over the rest of the boids
@@ -236,8 +252,15 @@ export class Renderer {
         }  
       }
 
-      if (this.options.debug && shouldRenderDebug) {
-        boid.addChild(graphics);
+      if (this.options.debug) {
+        // debug text
+        // const textChild: any = boid.getChildByName('text');
+        // const textSprite: PIXI.Text = textChild;
+        // textSprite.rotation = -boid.rotation;
+        // textSprite.text = '';
+        if (shouldRenderDebug) {
+          boid.addChild(graphics);
+        }
       }
 
       boid.tint = 0xcccccc;
@@ -245,16 +268,19 @@ export class Renderer {
       // Calculate forces
       if (separationNeighbours.length > 0) {
         boid.tint = COLORS.SEPARATION;
+        // separation makes it want to fly away from neighbours
         f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
       }
 
       if (alignmentNeighbours.length > 0) {
         boid.tint = COLORS.ALIGNMENT;
+        // alignment makes it want to fly in the same rotation
         f_alignment = Util.getNeighboursRotation(alignmentNeighbours, boid);
       }
 
       if (cohesionNeighbours.length > 0) {
         boid.tint = COLORS.COHESION;
+        // cohesion makes it want to go towards neighbours
         f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
       }
 

@@ -43585,6 +43585,13 @@ var COLORS = {
     SEPARATION: 0xeb0000,
     NONE: 0x999999,
 };
+var textStyle = new text_4({
+    fontFamily: 'Arial',
+    fontSize: 14,
+    fill: '#ffffff',
+    wordWrap: true,
+    wordWrapWidth: 440,
+});
 var Renderer = (function () {
     function Renderer(options) {
         this.options = options;
@@ -43664,15 +43671,18 @@ var Renderer = (function () {
             if (this.options.debug) {
                 var visionAngle = this.options.visionAngle * Math.PI / 180;
                 var graphics = new graphics_3();
-                graphics.beginFill(COLORS.ALIGNMENT, 0.2);
+                graphics.beginFill(COLORS.ALIGNMENT, 0.1);
                 graphics.arc(0, 0, this.options.alignmentRadius, -visionAngle, visionAngle);
                 graphics.endFill();
-                graphics.lineStyle(1, COLORS.COHESION, 0.25);
+                graphics.lineStyle(1, COLORS.COHESION, 0.1);
                 graphics.drawCircle(0, 0, this.options.cohesionRadius);
-                graphics.lineStyle(1, COLORS.SEPARATION, 0.25);
+                graphics.lineStyle(1, COLORS.SEPARATION, 0.1);
                 graphics.drawCircle(0, 0, this.options.separationRadius);
                 graphics.name = 'circles';
-                boid.addChild(graphics);
+                var boidInfo = new text_2('boid ' + i, textStyle);
+                boidInfo.visible = false;
+                boid.addChild(boidInfo);
+                boid.addChild(graphics, boidInfo);
             }
         }
         this.app.ticker.add(function (delta) {
@@ -43689,8 +43699,9 @@ var Renderer = (function () {
         var visionAngle = this.options.visionAngle * Math.PI / 180;
         for (var i = 0; i < totalBoids; i++) {
             var boid = this.boids[i];
-            if (boid.children.length > 1) {
-                boid.removeChildAt(1);
+            var debugNeighboursChild = boid.getChildByName('neighbours');
+            if (debugNeighboursChild) {
+                boid.removeChild(debugNeighboursChild);
             }
             var f_cohesion = 0;
             var f_separation = 0;
@@ -43701,6 +43712,7 @@ var Renderer = (function () {
             var separationNeighbours = [];
             var alignmentNeighbours = [];
             var graphics = new graphics_3();
+            graphics.name = 'neighbours';
             var shouldRenderDebug = false;
             for (var a = 0; a < totalBoids; a++) {
                 if (a === i) {
@@ -43728,8 +43740,10 @@ var Renderer = (function () {
                     graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
                 }
             }
-            if (this.options.debug && shouldRenderDebug) {
-                boid.addChild(graphics);
+            if (this.options.debug) {
+                if (shouldRenderDebug) {
+                    boid.addChild(graphics);
+                }
             }
             boid.tint = 0xcccccc;
             if (separationNeighbours.length > 0) {
@@ -46350,11 +46364,11 @@ var options = {
     alignmentRadius: 60,
     separationRadius: 20,
     predatorRadius: 0,
-    cohesionForce: 5,
-    separationForce: 25,
-    alignmentForce: 50,
-    predatorForce: 60,
-    obstacleForce: 20,
+    cohesionForce: 50,
+    separationForce: 0,
+    alignmentForce: 0,
+    predatorForce: 0,
+    obstacleForce: 0,
 };
 var renderer = new Renderer(options);
 setupGui(options);

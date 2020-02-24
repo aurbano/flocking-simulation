@@ -23,11 +23,11 @@ const options: Options = {
   separationRadius: 20,
   predatorRadius: 0,
 
-  cohesionForce: 5,
-  separationForce: 25,
-  alignmentForce: 50,
-  predatorForce: 60,
-  obstacleForce: 20,
+  cohesionForce: 50,
+  separationForce: 0,
+  alignmentForce: 0,
+  predatorForce: 0,
+  obstacleForce: 0,
 };
 
 // Setup the Renderer
