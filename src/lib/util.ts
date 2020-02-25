@@ -40,10 +40,10 @@ export class Util {
 
   public static distance(p1: Position, p2: Position) {
     // Approximation by using octagons approach
-    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     // const dx = Math.abs(p2.x - p1.x);
     // const dy = Math.abs(p2.y - p1.y);
     // return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
+    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
   }
 
   public static arrayMean(arr: Array<any>, getKey: Function) {
@@ -85,13 +85,14 @@ export const COLORS = {
   COHESION: 0xcccccc,
   ALIGNMENT: 0x9dd60b,
   SEPARATION: 0xeb0000,
+  VISIBLE: 0x03b6fc,
   NONE: 0x999999
 };
 
 export const textStyle = new PIXI.TextStyle({
   fontFamily: "Arial",
   fontSize: 14,
-  fill: "#ffffff",
+  fill: "#cccccc",
   wordWrap: true,
   wordWrapWidth: 440
 });

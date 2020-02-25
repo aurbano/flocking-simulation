@@ -101,7 +101,7 @@ export class Boid extends PIXI.Sprite {
       this.debugVision.lineStyle(0);
       this.drawFilledArc(
         COLORS.SEPARATION,
-        0.25,
+        0.3,
         visionAngle,
         this.options.separationRadius,
         this.debugVision
@@ -128,7 +128,7 @@ export class Boid extends PIXI.Sprite {
       this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
 
       // // x+ axis
-      // this.debugVision.lineStyle(1, 0x03b6fc, 0.5);
+      // this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
       // this.debugVision.moveTo(0, 0).lineTo(100, 0);
       // // x- axis
       // this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);

@@ -43582,12 +43582,13 @@ var COLORS = {
     COHESION: 0xcccccc,
     ALIGNMENT: 0x9dd60b,
     SEPARATION: 0xeb0000,
+    VISIBLE: 0x03b6fc,
     NONE: 0x999999
 };
 var textStyle = new text_4({
     fontFamily: "Arial",
     fontSize: 14,
-    fill: "#ffffff",
+    fill: "#cccccc",
     wordWrap: true,
     wordWrapWidth: 440
 });
@@ -43682,7 +43683,7 @@ var Boid = (function (_super) {
             this.debugVision = new graphics_3();
             this.debugVision.name = "debugVision";
             this.debugVision.lineStyle(0);
-            this.drawFilledArc(COLORS.SEPARATION, 0.25, visionAngle, this.options.separationRadius, this.debugVision);
+            this.drawFilledArc(COLORS.SEPARATION, 0.3, visionAngle, this.options.separationRadius, this.debugVision);
             this.drawFilledArc(COLORS.ALIGNMENT, 0.2, visionAngle, this.options.alignmentRadius, this.debugVision);
             this.drawFilledArc(COLORS.COHESION, 0.25, visionAngle, this.options.cohesionRadius, this.debugVision);
             this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
@@ -43832,32 +43833,29 @@ var Renderer = (function () {
                     continue;
                 }
                 var neighbour = this.boids[a];
-                var neighbourCoords = boid.getNeighbourCoords(neighbour);
-                var neighbourAngle = boid.getAngleToNeighbour(neighbour);
-                var d = Util.distance(boid, neighbour);
                 var visible = boid.isNeighbourVisible(neighbour);
-                var endLength = Math.max(20, d);
-                var endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
-                var endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
                 if (!visible) {
-                    boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.1);
+                    continue;
                 }
-                else {
-                    boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.7);
+                var neighbourCoords = boid.getNeighbourCoords(neighbour);
+                var distance = Util.distance(boid, neighbour);
+                if (this.options.debug) {
+                    var neighbourAngle = boid.getAngleToNeighbour(neighbour);
+                    var endX = Math.sin(Math.PI / 2 - neighbourAngle) * distance;
+                    var endY = Math.cos(Math.PI / 2 - neighbourAngle) * distance;
+                    boid.drawDebugLine(endX, endY, COLORS.VISIBLE, 0.2);
                 }
-                if (visible) {
-                    if (d < this.options.separationRadius) {
-                        separationNeighbours.push(neighbour);
-                        boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
-                    }
-                    if (d < this.options.alignmentRadius) {
-                        alignmentNeighbours.push(neighbour);
-                        boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
-                    }
-                    if (d < this.options.cohesionRadius) {
-                        cohesionNeighbours.push(neighbour);
-                        boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
-                    }
+                if (distance < this.options.separationRadius) {
+                    separationNeighbours.push(neighbour);
+                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
+                }
+                if (distance < this.options.alignmentRadius) {
+                    alignmentNeighbours.push(neighbour);
+                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
+                }
+                if (distance < this.options.cohesionRadius) {
+                    cohesionNeighbours.push(neighbour);
+                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
                 }
             }
             boid.tint = 0xcccccc;
@@ -43874,10 +43872,7 @@ var Renderer = (function () {
                 boid.tint = COLORS.COHESION;
                 f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
             }
-            if (cohesionNeighbours.length +
-                separationNeighbours.length +
-                alignmentNeighbours.length <
-                1) {
+            if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
                 boid.tint = COLORS.NONE;
             }
             var mouseCoords = this.app.renderer.plugins.interaction.mouse.global;

@@ -183,40 +183,35 @@ export class Renderer {
           continue;
         }
         const neighbour = this.boids[a];
-        const neighbourCoords = boid.getNeighbourCoords(neighbour);
-        const neighbourAngle = boid.getAngleToNeighbour(neighbour);
-
-        const d = Util.distance(boid, neighbour);
-        let visible = boid.isNeighbourVisible(neighbour);
-
-        const endLength = Math.max(20, d);
-        const endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
-        const endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
+        const visible = boid.isNeighbourVisible(neighbour);
 
         if (!visible) {
-          boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.1);
-        } else {
-          boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.7);
+          continue;
         }
 
-        if (visible) {
-          if (d < this.options.separationRadius) {
-            separationNeighbours.push(neighbour);
+        const neighbourCoords = boid.getNeighbourCoords(neighbour);
+        const distance = Util.distance(boid, neighbour);
 
-            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
-          }
+        if (this.options.debug) {
+          const neighbourAngle = boid.getAngleToNeighbour(neighbour);
+          const endX = Math.sin(Math.PI / 2 - neighbourAngle) * distance;
+          const endY = Math.cos(Math.PI / 2 - neighbourAngle) * distance;
+          boid.drawDebugLine(endX, endY, COLORS.VISIBLE, 0.2);
+        }
 
-          if (d < this.options.alignmentRadius) {
-            alignmentNeighbours.push(neighbour);
+        if (distance < this.options.separationRadius) {
+          separationNeighbours.push(neighbour);
+          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
+        }
 
-            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
-          }
+        if (distance < this.options.alignmentRadius) {
+          alignmentNeighbours.push(neighbour);
+          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
+        }
 
-          if (d < this.options.cohesionRadius) {
-            cohesionNeighbours.push(neighbour);
-
-            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
-          }
+        if (distance < this.options.cohesionRadius) {
+          cohesionNeighbours.push(neighbour);
+          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
         }
       }
 
@@ -242,12 +237,7 @@ export class Renderer {
         f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
       }
 
-      if (
-        cohesionNeighbours.length +
-          separationNeighbours.length +
-          alignmentNeighbours.length <
-        1
-      ) {
+      if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
         boid.tint = COLORS.NONE;
       }
 
