@@ -43548,7 +43548,7 @@ var Util = (function () {
         return Math.atan2(mean_dy, mean_dx) - boid.rotation;
     };
     Util.printAngle = function (rad) {
-        return Math.round(rad * 180 / Math.PI);
+        return Math.round((rad * 180) / Math.PI);
     };
     Util.distance = function (p1, p2) {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
@@ -43572,27 +43572,142 @@ var Util = (function () {
         var value = currentValue / maxValue;
         var r = Math.round(255 * Math.sqrt(value));
         var g = Math.round(255 * Math.pow(value, 3));
-        var b = Math.round(255 * (Math.sin(2 * Math.PI * value) >= 0 ?
-            Math.sin(2 * Math.PI * value) : 0));
+        var b = Math.round(255 *
+            (Math.sin(2 * Math.PI * value) >= 0 ? Math.sin(2 * Math.PI * value) : 0));
         return Util.rgbToDecimal(r, g, b);
     };
     return Util;
 }());
-//# sourceMappingURL=util.js.map
-
 var COLORS = {
-    COHESION: 0xCCCCCC,
+    COHESION: 0xcccccc,
     ALIGNMENT: 0x9dd60b,
     SEPARATION: 0xeb0000,
-    NONE: 0x999999,
+    NONE: 0x999999
 };
 var textStyle = new text_4({
-    fontFamily: 'Arial',
+    fontFamily: "Arial",
     fontSize: 14,
-    fill: '#ffffff',
+    fill: "#ffffff",
     wordWrap: true,
-    wordWrapWidth: 440,
+    wordWrapWidth: 440
 });
+//# sourceMappingURL=util.js.map
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var Boid = (function (_super) {
+    __extends(Boid, _super);
+    function Boid(options, maxX, maxY, texture) {
+        var _this = _super.call(this, texture) || this;
+        _this.options = options;
+        _this.x = Math.floor(Math.random() * maxX);
+        _this.y = Math.floor(Math.random() * maxY);
+        _this.pivot.set(_this.options.boidLength / 2, _this.options.boidHeight);
+        _this.anchor.set(0.5, 0.5);
+        _this.rotation = Math.random() * Math.PI * 2;
+        _this.desiredVector = {
+            rotation: Math.random() * 2 * Math.PI,
+            magnitude: 1
+        };
+        _this.initDebug();
+        return _this;
+    }
+    Boid.prototype.getNeighbourCoords = function (neighbour) {
+        return this.toLocal(new math_8(0, 0), neighbour);
+    };
+    Boid.prototype.getAngleToNeighbour = function (neighbour) {
+        var coords = this.getNeighbourCoords(neighbour);
+        var angle = Math.atan(coords.y / coords.x);
+        if (coords.x < 0) {
+            return angle + Math.PI;
+        }
+        return angle;
+    };
+    Boid.prototype.isNeighbourVisible = function (neighbour) {
+        var visionAngle = (this.options.visionAngle * Math.PI) / 180;
+        var neighbourAngleFromY = this.getAngleToNeighbour(neighbour) - Math.PI / 2;
+        if (neighbourAngleFromY < 0) {
+            neighbourAngleFromY += 2 * Math.PI;
+        }
+        return (neighbourAngleFromY < visionAngle ||
+            neighbourAngleFromY > 2 * Math.PI - visionAngle);
+    };
+    Boid.prototype.drawDebugLine = function (x, y, color, alpha, thickness) {
+        if (alpha === void 0) { alpha = 1; }
+        if (thickness === void 0) { thickness = 1; }
+        this.debugNeighbours.lineStyle(thickness, color, alpha);
+        this.debugNeighbours.moveTo(0, 0).lineTo(x, y);
+    };
+    Boid.prototype.resetDebug = function () {
+        this.debugInfo.text = '';
+        this.debugInfo.rotation = -this.rotation;
+        this.removeChild(this.debugNeighbours);
+        this.debugNeighbours = new graphics_3();
+        this.debugNeighbours.name = "debugNeighbours";
+        this.addChild(this.debugNeighbours);
+    };
+    Boid.prototype.debugLog = function (msg) {
+        this.debugInfo.text += msg + '\n';
+    };
+    Boid.prototype.initDebug = function () {
+        if (this.options.debug) {
+            var visionAngle = (this.options.visionAngle * Math.PI) / 180;
+            this.debugVision = new graphics_3();
+            this.debugVision.name = "debugVision";
+            this.debugVision.lineStyle(0);
+            this.drawFilledArc(COLORS.SEPARATION, 0.25, visionAngle, this.options.separationRadius, this.debugVision);
+            this.drawFilledArc(COLORS.ALIGNMENT, 0.2, visionAngle, this.options.alignmentRadius, this.debugVision);
+            this.drawFilledArc(COLORS.COHESION, 0.25, visionAngle, this.options.cohesionRadius, this.debugVision);
+            this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
+            this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
+            this.debugInfo = new text_2("", textStyle);
+            this.debugInfo.name = "debugInfo";
+            this.debugInfo.zIndex = 9;
+            this.debugNeighbours = new graphics_3();
+            this.debugNeighbours.name = "debugNeighbours";
+            this.addChild(this.debugVision, this.debugNeighbours, this.debugInfo);
+        }
+    };
+    Boid.prototype.drawFilledArc = function (color, alpha, angle, radius, graphics) {
+        graphics.beginFill(color, 0.1);
+        graphics
+            .moveTo(0, 0)
+            .arc(0, 0, radius, Math.PI / 2, angle + Math.PI / 2)
+            .moveTo(0, 0)
+            .arc(0, 0, radius, Math.PI / 2 - angle, Math.PI / 2);
+        graphics.endFill();
+    };
+    return Boid;
+}(sprite_1));
+//# sourceMappingURL=boid.js.map
+
 var Renderer = (function () {
     function Renderer(options) {
         var _this = this;
@@ -43609,7 +43724,7 @@ var Renderer = (function () {
             resizeTo: window,
             resolution: devicePixelRatio,
             autoDensity: true,
-            backgroundColor: options.background,
+            backgroundColor: options.background
         });
         this.stats = new stats_min();
         this.stats.showPanel(0);
@@ -43618,7 +43733,7 @@ var Renderer = (function () {
             this.boidContainer = new particles_1(this.options.number, {
                 position: true,
                 rotation: true,
-                tint: true,
+                tint: true
             });
         }
         else {
@@ -43626,11 +43741,12 @@ var Renderer = (function () {
         }
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
-        var gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
+        var gridItems = (maxX / this.options.heatmapGridSize) *
+            (maxY / this.options.heatmapGridSize);
         this.heatmapContainer = new particles_1(gridItems, {
             position: false,
             rotation: false,
-            tint: true,
+            tint: true
         });
         this.app.stage.addChild(this.heatmapContainer);
         this.app.stage.addChild(this.boidContainer);
@@ -43640,7 +43756,7 @@ var Renderer = (function () {
         graphics.drawPolygon([
             new math_8(this.options.boidLength / 2, this.options.boidHeight),
             new math_8(0, 0),
-            new math_8(this.options.boidLength, 0),
+            new math_8(this.options.boidLength, 0)
         ]);
         graphics.endFill();
         var region = new math_11(0, 0, options.boidLength, options.boidHeight);
@@ -43652,7 +43768,9 @@ var Renderer = (function () {
         graphics.endFill();
         region = new math_11(0, 0, options.heatmapGridSize, options.heatmapGridSize);
         this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
-        document.getElementById(this.options.containerId).appendChild(this.app.view);
+        document
+            .getElementById(this.options.containerId)
+            .appendChild(this.app.view);
         document.body.onkeyup = function (e) {
             if (e.keyCode == 32) {
                 _this.togglePause();
@@ -43679,45 +43797,10 @@ var Renderer = (function () {
             }
         }
         for (var i = 0; i < this.options.number; i++) {
-            var boid = new sprite_1(this.boidTexture);
-            boid.x = Math.floor(Math.random() * maxX);
-            boid.y = Math.floor(Math.random() * maxY);
-            boid.pivot.set(this.options.boidLength / 2, this.options.boidHeight);
-            boid.anchor.set(0.5, 0.5);
-            boid.rotation = Math.random() * Math.PI * 2;
+            var boid = new Boid(this.options, maxX, maxY, this.boidTexture);
             this.boidContainer.addChild(boid);
             this.boids.push(boid);
             this.updateHeatmapCell(boid.x, boid.y);
-            if (this.options.debug) {
-                var visionAngle = this.options.visionAngle * Math.PI / 180;
-                var graphics = new graphics_3();
-                graphics.lineStyle(0);
-                graphics.beginFill(COLORS.SEPARATION, 0.25);
-                graphics.moveTo(0, 0)
-                    .arc(0, 0, this.options.separationRadius, Math.PI / 2, visionAngle + Math.PI / 2)
-                    .moveTo(0, 0)
-                    .arc(0, 0, this.options.separationRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
-                graphics.endFill();
-                graphics.beginFill(COLORS.ALIGNMENT, 0.2);
-                graphics.moveTo(0, 0)
-                    .arc(0, 0, this.options.alignmentRadius, Math.PI / 2, visionAngle + Math.PI / 2)
-                    .moveTo(0, 0)
-                    .arc(0, 0, this.options.alignmentRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
-                graphics.endFill();
-                graphics.beginFill(COLORS.COHESION, 0.1);
-                graphics.moveTo(0, 0)
-                    .arc(0, 0, this.options.cohesionRadius, Math.PI / 2, visionAngle + Math.PI / 2)
-                    .moveTo(0, 0)
-                    .arc(0, 0, this.options.cohesionRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
-                graphics.endFill();
-                graphics.name = 'circles';
-                var boidInfo = new text_2('', textStyle);
-                boidInfo.visible = true;
-                boidInfo.name = 'text';
-                boidInfo.zIndex = 9;
-                boid.addChild(boidInfo);
-                boid.addChild(graphics, boidInfo);
-            }
         }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
@@ -43732,13 +43815,8 @@ var Renderer = (function () {
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
         var totalBoids = this.boids.length;
-        var visionAngle = this.options.visionAngle * Math.PI / 180;
         for (var i = 0; i < totalBoids; i++) {
             var boid = this.boids[i];
-            var debugNeighboursChild = boid.getChildByName('neighbours');
-            if (debugNeighboursChild) {
-                boid.removeChild(debugNeighboursChild);
-            }
             var f_cohesion = 0;
             var f_separation = 0;
             var f_alignment = 0;
@@ -43747,76 +43825,46 @@ var Renderer = (function () {
             var cohesionNeighbours = [];
             var separationNeighbours = [];
             var alignmentNeighbours = [];
-            var graphics = new graphics_3();
-            graphics.name = 'neighbours';
-            var text = ["[" + i + "]"];
+            boid.resetDebug();
+            boid.debugLog("[" + i + "]");
             for (var a = 0; a < totalBoids; a++) {
                 if (a === i) {
                     continue;
                 }
                 var neighbour = this.boids[a];
-                var neighbourCoords = boid.toLocal(new math_8(0, 0), neighbour);
+                var neighbourCoords = boid.getNeighbourCoords(neighbour);
+                var neighbourAngle = boid.getAngleToNeighbour(neighbour);
                 var d = Util.distance(boid, neighbour);
-                var visible = false;
-                var neighbourAngle = Math.atan(neighbourCoords.y / neighbourCoords.x);
-                if (neighbourCoords.x < 0) {
-                    neighbourAngle += Math.PI;
-                }
-                var neighbourAngleFromY = neighbourAngle - Math.PI / 2;
-                if (neighbourAngleFromY < 0) {
-                    neighbourAngleFromY += 2 * Math.PI;
-                }
-                if (neighbourAngleFromY < visionAngle || neighbourAngleFromY > 2 * Math.PI - visionAngle) {
-                    visible = true;
-                }
-                text.push("n" + a + " = " + Util.printAngle(neighbourAngle) + " | " + Util.printAngle(neighbourAngleFromY) + " | (" + visible + ")");
+                var visible = boid.isNeighbourVisible(neighbour);
                 var endLength = Math.max(20, d);
                 var endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
                 var endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
                 if (!visible) {
-                    graphics.lineStyle(1, COLORS.ALIGNMENT, 0.1);
+                    boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.1);
                 }
                 else {
-                    graphics.lineStyle(1, COLORS.ALIGNMENT, 0.7);
+                    boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.7);
                 }
-                graphics.moveTo(0, 0).lineTo(endX, endY);
-                graphics.lineStyle(1, COLORS.COHESION, 0.05);
-                graphics.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
-                graphics.lineStyle(1, 0x0000eb, 0.5);
-                graphics.moveTo(0, 0).lineTo(100, 0);
-                graphics.lineStyle(1, COLORS.SEPARATION, 0.5);
-                graphics.moveTo(-100, 0).lineTo(0, 0);
-                boid.addChild(graphics);
                 if (visible) {
                     if (d < this.options.separationRadius) {
                         separationNeighbours.push(neighbour);
-                        graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
-                        graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+                        boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
                     }
                     if (d < this.options.alignmentRadius) {
                         alignmentNeighbours.push(neighbour);
-                        graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
-                        graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+                        boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
                     }
                     if (d < this.options.cohesionRadius) {
                         cohesionNeighbours.push(neighbour);
-                        graphics.lineStyle(2, COLORS.COHESION, 0.7);
-                        graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+                        boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
                     }
-                }
-            }
-            if (this.options.debug) {
-                var textChild = boid.getChildByName('text');
-                var textSprite = textChild;
-                if (textSprite) {
-                    textSprite.rotation = -boid.rotation;
-                    textSprite.text = text.join('\n');
                 }
             }
             boid.tint = 0xcccccc;
             if (separationNeighbours.length > 0) {
                 boid.tint = COLORS.SEPARATION;
-                f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
+                f_separation =
+                    Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
             }
             if (alignmentNeighbours.length > 0) {
                 boid.tint = COLORS.ALIGNMENT;
@@ -43826,21 +43874,26 @@ var Renderer = (function () {
                 boid.tint = COLORS.COHESION;
                 f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
             }
-            if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
+            if (cohesionNeighbours.length +
+                separationNeighbours.length +
+                alignmentNeighbours.length <
+                1) {
                 boid.tint = COLORS.NONE;
             }
             var mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
             var mouseDistance = Util.distance(mouseCoords, boid);
             if (mouseDistance < this.options.predatorRadius) {
                 boid.tint = COLORS.SEPARATION;
-                f_predators = Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+                f_predators =
+                    Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
             }
-            boid.rotation = boid.rotation +
-                this.options.cohesionForce * f_cohesion / 100 +
-                this.options.separationForce * f_separation / 100 +
-                this.options.alignmentForce * f_alignment / 100 +
-                this.options.predatorForce * f_predators / 100 +
-                this.options.obstacleForce * f_obstacles / 100;
+            boid.rotation =
+                boid.rotation +
+                    (this.options.cohesionForce * f_cohesion) / 100 +
+                    (this.options.separationForce * f_separation) / 100 +
+                    (this.options.alignmentForce * f_alignment) / 100 +
+                    (this.options.predatorForce * f_predators) / 100 +
+                    (this.options.obstacleForce * f_obstacles) / 100;
             var dx = Math.sin(boid.rotation) * this.options.speed;
             var dy = Math.cos(boid.rotation) * this.options.speed;
             boid.x -= dx * delta;
@@ -43866,7 +43919,10 @@ var Renderer = (function () {
         }
         var x = Math.floor(boidX / this.options.heatmapGridSize);
         var y = Math.floor(boidY / this.options.heatmapGridSize);
-        if (x < 0 || y < 0 || x >= this.heatmapCells.length || y >= this.heatmapCells[0].length) {
+        if (x < 0 ||
+            y < 0 ||
+            x >= this.heatmapCells.length ||
+            y >= this.heatmapCells[0].length) {
             return;
         }
         this.heatmapHistory[x][y] += this.options.heatmapIncrease;
@@ -43880,7 +43936,8 @@ var Renderer = (function () {
         }
         for (var x = 0; x < this.heatmapHistory.length; x++) {
             for (var y = 0; y < this.heatmapHistory[x].length; y++) {
-                this.heatmapHistory[x][y] = Math.max(0, this.heatmapHistory[x][y] - this.heatmapMax * this.options.heatmapAttenuation / 100000);
+                this.heatmapHistory[x][y] = Math.max(0, this.heatmapHistory[x][y] -
+                    (this.heatmapMax * this.options.heatmapAttenuation) / 100000);
                 this.heatmapMax = Math.max(this.heatmapMax, this.heatmapHistory[x][y]);
                 var tint = Util.heatmapColor(this.heatmapMax, this.heatmapHistory[x][y]);
                 this.heatmapCells[x][y].tint = tint;
@@ -43889,7 +43946,6 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
-//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46388,34 +46444,36 @@ var GUI$1 = GUI;
 
 function setupGui(options, togglePause) {
     var gui = new GUI$1({
-        name: 'Setings',
-        closed: true,
+        name: "Setings",
+        closed: true
     });
-    var general = gui.addFolder('General');
+    var general = gui.addFolder("General");
     general.open();
-    general.add(options, 'speed', 0, 25, 1);
-    general.add(options, 'visionAngle', 0, 180, 1);
-    var heatmap = gui.addFolder('Heatmap');
+    general.add(options, "speed", 0, 25, 1);
+    general.add(options, "visionAngle", 0, 180, 1);
+    var heatmap = gui.addFolder("Heatmap");
     heatmap.open();
-    heatmap.add(options, 'heatmapIncrease', 0, 500, 0.1);
-    heatmap.add(options, 'heatmapAttenuation', 0, 1000, 1);
-    var distances = gui.addFolder('Distances');
+    heatmap.add(options, "heatmapIncrease", 0, 500, 0.1);
+    heatmap.add(options, "heatmapAttenuation", 0, 1000, 1);
+    var distances = gui.addFolder("Distances");
     distances.open();
-    distances.add(options, 'cohesionRadius', 0, 500, 1);
-    distances.add(options, 'separationRadius', 0, 500, 1);
-    distances.add(options, 'alignmentRadius', 0, 500, 1);
-    distances.add(options, 'predatorRadius', 0, 500, 1);
-    var forces = gui.addFolder('Forces');
+    distances.add(options, "cohesionRadius", 0, 500, 1);
+    distances.add(options, "separationRadius", 0, 500, 1);
+    distances.add(options, "alignmentRadius", 0, 500, 1);
+    distances.add(options, "predatorRadius", 0, 500, 1);
+    var forces = gui.addFolder("Forces");
     forces.open();
-    forces.add(options, 'cohesionForce', 0, 100, 1);
-    forces.add(options, 'separationForce', 0, 100, 1);
-    forces.add(options, 'alignmentForce', 0, 100, 1);
-    forces.add(options, 'predatorForce', 0, 100, 1);
-    forces.add(options, 'obstacleForce', 0, 100, 1);
+    forces.add(options, "cohesionForce", 0, 100, 1);
+    forces.add(options, "separationForce", 0, 100, 1);
+    forces.add(options, "alignmentForce", 0, 100, 1);
+    forces.add(options, "predatorForce", 0, 100, 1);
+    forces.add(options, "obstacleForce", 0, 100, 1);
     var methods = {
-        togglePause: function () { togglePause(); },
+        togglePause: function () {
+            togglePause();
+        }
     };
-    gui.add(methods, 'togglePause');
+    gui.add(methods, "togglePause");
     return gui;
 }
 //# sourceMappingURL=gui.js.map
@@ -46446,4 +46504,5 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options, renderer.togglePause);
 renderer.start();
+//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

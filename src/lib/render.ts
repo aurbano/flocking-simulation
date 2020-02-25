@@ -1,28 +1,14 @@
-import * as PIXI from 'pixi.js';
-import Stats from 'stats.js';
+import * as PIXI from "pixi.js";
+import Stats from "stats.js";
 
-import { Options } from '../model/types';
-import { Util } from './util';
-
-const COLORS = {
-  COHESION: 0xCCCCCC,
-  ALIGNMENT: 0x9dd60b,
-  SEPARATION: 0xeb0000,
-  NONE: 0x999999,
-};
-
-const textStyle = new PIXI.TextStyle({
-  fontFamily: 'Arial',
-  fontSize: 14,
-  fill: '#ffffff',
-  wordWrap: true,
-  wordWrapWidth: 440,
-});
+import { Options } from "../model/types";
+import { Util, COLORS } from "./util";
+import { Boid } from "../model/boid";
 
 export class Renderer {
   private app: PIXI.Application;
 
-  private boids: PIXI.Sprite[] = [];
+  private boids: Boid[] = [];
   private boidTexture: PIXI.Texture;
   private boidContainer: PIXI.Container;
 
@@ -41,18 +27,18 @@ export class Renderer {
       resizeTo: window,
       resolution: devicePixelRatio,
       autoDensity: true,
-      backgroundColor: options.background,
+      backgroundColor: options.background
     });
 
     this.stats = new Stats();
     this.stats.showPanel(0);
-    document.body.appendChild( this.stats.dom );
+    document.body.appendChild(this.stats.dom);
 
     if (!this.options.debug) {
       this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
         position: true,
         rotation: true,
-        tint: true,
+        tint: true
       });
     } else {
       this.boidContainer = new PIXI.Container();
@@ -60,12 +46,14 @@ export class Renderer {
 
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
-    const gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
+    const gridItems =
+      (maxX / this.options.heatmapGridSize) *
+      (maxY / this.options.heatmapGridSize);
 
     this.heatmapContainer = new PIXI.ParticleContainer(gridItems, {
       position: false,
       rotation: false,
-      tint: true,
+      tint: true
     });
     this.app.stage.addChild(this.heatmapContainer);
     this.app.stage.addChild(this.boidContainer);
@@ -77,9 +65,10 @@ export class Renderer {
     graphics.drawPolygon([
       new PIXI.Point(this.options.boidLength / 2, this.options.boidHeight),
       new PIXI.Point(0, 0),
-      new PIXI.Point(this.options.boidLength, 0),
+      new PIXI.Point(this.options.boidLength, 0)
     ]);
     graphics.endFill();
+
     let region = new PIXI.Rectangle(0, 0, options.boidLength, options.boidHeight);
     this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
     this.boidTexture.defaultAnchor.set(0.5, 0.5);
@@ -93,14 +82,16 @@ export class Renderer {
     this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
 
     // Render the app
-    document.getElementById(this.options.containerId).appendChild(this.app.view);
+    document
+      .getElementById(this.options.containerId)
+      .appendChild(this.app.view);
 
     // Pause on spacebar
     document.body.onkeyup = (e: KeyboardEvent) => {
-      if (e.keyCode == 32){
-          this.togglePause();
+      if (e.keyCode == 32) {
+        this.togglePause();
       }
-    }
+    };
   }
 
   public start() {
@@ -109,19 +100,27 @@ export class Renderer {
 
     // Initialize heatmap grid
     if (this.options.heatmap) {
-      for (let gridX = 0; gridX < maxX / this.options.heatmapGridSize; gridX++) {
+      for (
+        let gridX = 0;
+        gridX < maxX / this.options.heatmapGridSize;
+        gridX++
+      ) {
         this.heatmapCells[gridX] = [];
         this.heatmapHistory[gridX] = [];
-  
-        for (let gridY = 0; gridY < maxY / this.options.heatmapGridSize; gridY++) {
+
+        for (
+          let gridY = 0;
+          gridY < maxY / this.options.heatmapGridSize;
+          gridY++
+        ) {
           const gridCell = new PIXI.Sprite(this.heatmapTexture);
           gridCell.x = gridX * this.options.heatmapGridSize;
           gridCell.y = gridY * this.options.heatmapGridSize;
           gridCell.tint = this.options.background;
-  
+
           this.heatmapCells[gridX][gridY] = gridCell;
           this.heatmapHistory[gridX][gridY] = 0;
-  
+
           this.heatmapContainer.addChild(gridCell);
         }
       }
@@ -129,62 +128,16 @@ export class Renderer {
 
     // Initialize boids
     for (let i = 0; i < this.options.number; i++) {
-      const boid = new PIXI.Sprite(this.boidTexture);
-
-      boid.x = Math.floor(Math.random() * maxX);
-      boid.y = Math.floor(Math.random() * maxY);
-      
-      boid.pivot.set(this.options.boidLength / 2, this.options.boidHeight);
-      boid.anchor.set(0.5, 0.5);
-      boid.rotation = Math.random() * Math.PI * 2;
+      const boid = new Boid(this.options, maxX, maxY, this.boidTexture);
 
       this.boidContainer.addChild(boid);
       this.boids.push(boid);
 
       this.updateHeatmapCell(boid.x, boid.y);
-
-      // Add debug graphics
-      if (this.options.debug) {
-        const visionAngle = this.options.visionAngle * Math.PI / 180;
-
-        const graphics = new PIXI.Graphics();
-        // boids vision
-        graphics.lineStyle(0)
-        graphics.beginFill(COLORS.SEPARATION, 0.25);
-        graphics.moveTo(0,0)
-                .arc(0, 0, this.options.separationRadius, Math.PI / 2, visionAngle + Math.PI / 2)
-                .moveTo(0,0)
-                .arc(0, 0, this.options.separationRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
-        graphics.endFill();
-  
-        graphics.beginFill(COLORS.ALIGNMENT, 0.2);
-        graphics.moveTo(0,0)
-                .arc(0, 0, this.options.alignmentRadius, Math.PI / 2, visionAngle + Math.PI / 2)
-                .moveTo(0,0)
-                .arc(0, 0, this.options.alignmentRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
-        graphics.endFill();
-  
-        graphics.beginFill(COLORS.COHESION, 0.1);
-        graphics.moveTo(0,0)
-                .arc(0, 0, this.options.cohesionRadius, Math.PI / 2, visionAngle + Math.PI / 2)
-                .moveTo(0,0)
-                .arc(0, 0, this.options.cohesionRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
-        graphics.endFill();
-  
-        graphics.name = 'circles';
-
-        const boidInfo = new PIXI.Text('', textStyle);
-        boidInfo.visible = true;
-        boidInfo.name = 'text';
-        boidInfo.zIndex = 9;
-        boid.addChild(boidInfo);
-  
-        boid.addChild(graphics, boidInfo);
-      }
     }
 
     // Listen for animate update
-    this.app.ticker.add((delta) => {
+    this.app.ticker.add(delta => {
       this.stats.begin();
 
       if (!this.paused) {
@@ -198,48 +151,31 @@ export class Renderer {
 
   public togglePause = () => {
     this.paused = !this.paused;
-  }
+  };
 
-  /**
-   * Boids fly towards their positive y axis, with the positive x axis on their left
-   * @param delta
-   */
   private updateBoids(delta: number) {
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
     const totalBoids = this.boids.length;
 
-    const visionAngle = this.options.visionAngle * Math.PI / 180;
-
     for (let i = 0; i < totalBoids; i++) {
       const boid = this.boids[i];
 
-      // remove potential child debugging lines
-      const debugNeighboursChild = boid.getChildByName('neighbours');
-      if (debugNeighboursChild) {
-        boid.removeChild(
-          debugNeighboursChild
-        );
-      }
-
       // Forces that determine flocking
-      let f_cohesion: number = 0;   // steer towards average position of neighbours (long range attraction)
+      let f_cohesion: number = 0; // steer towards average position of neighbours (long range attraction)
       let f_separation: number = 0; // avoid crowding neighbours (short range repulsion)
-      let f_alignment: number = 0;  // steer towards average heading of neighbours
-      let f_predators: number = 0;  // avoid predators
-      let f_obstacles: number = 0;  // avoid obstacles (same as predators but with less margin)
+      let f_alignment: number = 0; // steer towards average heading of neighbours
+      let f_predators: number = 0; // avoid predators
+      let f_obstacles: number = 0; // avoid obstacles (same as predators but with less margin)
 
       // Find important neighbours
-      const cohesionNeighbours: PIXI.Sprite[] = [];
-      const separationNeighbours: PIXI.Sprite[] = [];
-      const alignmentNeighbours: PIXI.Sprite[] = [];
+      const cohesionNeighbours: Boid[] = [];
+      const separationNeighbours: Boid[] = [];
+      const alignmentNeighbours: Boid[] = [];
       // const enemiesNear = [];
 
-      const graphics = new PIXI.Graphics();
-      graphics.name = 'neighbours';
-      let shouldRenderDebug = false;
-
-      let text: string[] = [`[${i}]`];
+      boid.resetDebug();
+      boid.debugLog(`[${i}]`);
 
       // Iterate over the rest of the boids to find neighbours
       for (let a = 0; a < totalBoids; a++) {
@@ -247,95 +183,41 @@ export class Renderer {
           continue;
         }
         const neighbour = this.boids[a];
-        const neighbourCoords = boid.toLocal(
-          new PIXI.Point(
-            0,
-            0
-          ),
-          neighbour
-        );
+        const neighbourCoords = boid.getNeighbourCoords(neighbour);
+        const neighbourAngle = boid.getAngleToNeighbour(neighbour);
 
         const d = Util.distance(boid, neighbour);
-        let visible = false;
-
-        // angle to each neighbour measured from the x axis
-        let neighbourAngle = Math.atan(neighbourCoords.y / neighbourCoords.x);
-        if (neighbourCoords.x < 0) {
-          neighbourAngle += Math.PI;
-        }
-        let neighbourAngleFromY = neighbourAngle - Math.PI / 2;
-        if (neighbourAngleFromY < 0) {
-          neighbourAngleFromY += 2 * Math.PI;
-        }
-
-        if (neighbourAngleFromY < visionAngle || neighbourAngleFromY > 2 * Math.PI - visionAngle) {
-          visible = true;
-        }
-
-        text.push(`n${a} = ${Util.printAngle(neighbourAngle)} | ${Util.printAngle(neighbourAngleFromY)} | (${visible})`);
+        let visible = boid.isNeighbourVisible(neighbour);
 
         const endLength = Math.max(20, d);
         const endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
         const endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
 
         if (!visible) {
-          graphics.lineStyle(1, COLORS.ALIGNMENT, 0.1);
+          boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.1);
         } else {
-          graphics.lineStyle(1, COLORS.ALIGNMENT, 0.7);
+          boid.drawDebugLine(endX, endY, COLORS.ALIGNMENT, 0.7);
         }
-        graphics.moveTo(0, 0).lineTo(endX, endY);
 
-        // draw the axis
-        graphics.lineStyle(1, COLORS.COHESION, 0.05);
-        graphics.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
-
-        // x axis
-        graphics.lineStyle(1, 0x0000eb, 0.5);
-        graphics.moveTo(0, 0).lineTo(100, 0);
-        graphics.lineStyle(1, COLORS.SEPARATION, 0.5);
-        graphics.moveTo(-100, 0).lineTo(0, 0);
-
-        boid.addChild(graphics);
-
-        
         if (visible) {
           if (d < this.options.separationRadius) {
             separationNeighbours.push(neighbour);
 
-            shouldRenderDebug = true;
-            graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
-            graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
           }
 
           if (d < this.options.alignmentRadius) {
             alignmentNeighbours.push(neighbour);
 
-            shouldRenderDebug = true;
-            graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
-            graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
           }
 
           if (d < this.options.cohesionRadius) {
             cohesionNeighbours.push(neighbour);
 
-            shouldRenderDebug = true;
-            graphics.lineStyle(2, COLORS.COHESION, 0.7);
-            graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
-          }  
+            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
+          }
         }
-      }
-
-      if (this.options.debug) {
-        // debug text
-        const textChild: any = boid.getChildByName('text');
-        const textSprite: PIXI.Text = textChild;
-        if (textSprite) {
-          textSprite.rotation = -boid.rotation;
-          textSprite.text = text.join('\n');
-        }
-        // if (shouldRenderDebug) {
-        //   boid.addChild(graphics);
-        // }
       }
 
       boid.tint = 0xcccccc;
@@ -344,7 +226,8 @@ export class Renderer {
       if (separationNeighbours.length > 0) {
         boid.tint = COLORS.SEPARATION;
         // separation makes it want to fly away from neighbours
-        f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
+        f_separation =
+          Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
       }
 
       if (alignmentNeighbours.length > 0) {
@@ -359,7 +242,12 @@ export class Renderer {
         f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
       }
 
-      if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
+      if (
+        cohesionNeighbours.length +
+          separationNeighbours.length +
+          alignmentNeighbours.length <
+        1
+      ) {
         boid.tint = COLORS.NONE;
       }
 
@@ -368,16 +256,18 @@ export class Renderer {
       const mouseDistance = Util.distance(mouseCoords, boid);
       if (mouseDistance < this.options.predatorRadius) {
         boid.tint = COLORS.SEPARATION;
-        f_predators = Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+        f_predators =
+          Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
       }
 
       // Calculate the new direction of flight
-      boid.rotation = boid.rotation + 
-                      this.options.cohesionForce * f_cohesion / 100 + 
-                      this.options.separationForce * f_separation / 100 + 
-                      this.options.alignmentForce * f_alignment / 100 +
-                      this.options.predatorForce * f_predators / 100 +
-                      this.options.obstacleForce * f_obstacles / 100;
+      boid.rotation =
+        boid.rotation +
+        (this.options.cohesionForce * f_cohesion) / 100 +
+        (this.options.separationForce * f_separation) / 100 +
+        (this.options.alignmentForce * f_alignment) / 100 +
+        (this.options.predatorForce * f_predators) / 100 +
+        (this.options.obstacleForce * f_obstacles) / 100;
 
       // Now use the angle and the speed to calculate dx and dy
       const dx = Math.sin(boid.rotation) * this.options.speed;
@@ -412,7 +302,12 @@ export class Renderer {
     const x = Math.floor(boidX / this.options.heatmapGridSize);
     const y = Math.floor(boidY / this.options.heatmapGridSize);
 
-    if (x < 0 || y < 0 || x >= this.heatmapCells.length || y >= this.heatmapCells[0].length) {
+    if (
+      x < 0 ||
+      y < 0 ||
+      x >= this.heatmapCells.length ||
+      y >= this.heatmapCells[0].length
+    ) {
       return;
     }
 
@@ -427,13 +322,20 @@ export class Renderer {
     if (!this.options.heatmap) {
       return;
     }
-    
-    for(let x = 0; x < this.heatmapHistory.length; x++ ) {
-      for(let y = 0; y < this.heatmapHistory[x].length; y++ ) {
-        this.heatmapHistory[x][y] = Math.max(0, this.heatmapHistory[x][y] - this.heatmapMax * this.options.heatmapAttenuation / 100000);
+
+    for (let x = 0; x < this.heatmapHistory.length; x++) {
+      for (let y = 0; y < this.heatmapHistory[x].length; y++) {
+        this.heatmapHistory[x][y] = Math.max(
+          0,
+          this.heatmapHistory[x][y] -
+            (this.heatmapMax * this.options.heatmapAttenuation) / 100000
+        );
         this.heatmapMax = Math.max(this.heatmapMax, this.heatmapHistory[x][y]);
-        
-        const tint = Util.heatmapColor(this.heatmapMax, this.heatmapHistory[x][y]);
+
+        const tint = Util.heatmapColor(
+          this.heatmapMax,
+          this.heatmapHistory[x][y]
+        );
 
         this.heatmapCells[x][y].tint = tint;
       }
