@@ -95,7 +95,7 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.name = "debugNeighbours";
 
     // draw desired direction vector
-    this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.SEPARATION);
+    this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
     this.debugLog(`current: ${Util.printAngle(this.rotation)}`);
     this.debugLog(`desired: ${Util.printAngle(this.desiredVector.rotation)}`);
 

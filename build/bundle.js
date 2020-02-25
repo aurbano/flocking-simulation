@@ -43583,6 +43583,7 @@ var COLORS = {
     ALIGNMENT: 0x9dd60b,
     SEPARATION: 0xeb0000,
     VISIBLE: 0x03b6fc,
+    DESIRED: 0xf7b12f,
     NONE: 0x999999
 };
 var textStyle = new text_4({
@@ -43682,7 +43683,7 @@ var Boid = (function (_super) {
         this.removeChild(this.debugNeighbours);
         this.debugNeighbours = new graphics_3();
         this.debugNeighbours.name = "debugNeighbours";
-        this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.SEPARATION);
+        this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
         this.debugLog("current: " + Util.printAngle(this.rotation));
         this.debugLog("desired: " + Util.printAngle(this.desiredVector.rotation));
         this.addChild(this.debugNeighbours);
@@ -43891,8 +43892,6 @@ var Renderer = (function () {
                 var localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
                 boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
                 f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI;
-                boid.debugLog("mouse = " + Util.printAngle(f_predators));
-                boid.drawDebugVector(f_predators, 100, 0xf7b12f, 1, 5);
             }
             boid.desiredVector.rotation = f_predators;
             if (boid.desiredVector.rotation > 2 * Math.PI) {
@@ -43952,7 +43951,6 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
-//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46513,4 +46511,5 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options, renderer.togglePause);
 renderer.start();
+//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

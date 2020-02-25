@@ -86,6 +86,7 @@ export const COLORS = {
   ALIGNMENT: 0x9dd60b,
   SEPARATION: 0xeb0000,
   VISIBLE: 0x03b6fc,
+  DESIRED: 0xf7b12f,
   NONE: 0x999999
 };
 

@@ -248,11 +248,9 @@ export class Renderer {
         boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
 
         f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI;
-        boid.debugLog(`mouse = ` + Util.printAngle(f_predators));
-        boid.drawDebugVector(f_predators, 100, 0xf7b12f, 1, 5);
       }
 
-      // Calculate the new direction of flight
+      // TODO: Figure out how to calculate the new desired rotation combining all the forces
       boid.desiredVector.rotation = f_predators;
 
       if (boid.desiredVector.rotation > 2 * Math.PI) {
@@ -260,7 +258,7 @@ export class Renderer {
         boid.desiredVector.rotation -= wraps * 2 * Math.PI;
       }
 
-      // update direction
+      // TODO: update direction via the closest way to get there
       boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
 
       // Now use the angle and the speed to calculate dx and dy
