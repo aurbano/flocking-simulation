@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import { Options } from "./types";
-import { COLORS, textStyle } from "../lib/util";
+import { COLORS, textStyle, Util } from "../lib/util";
 
 type Vector = {
   rotation: number; // radians
@@ -27,7 +27,7 @@ export class Boid extends PIXI.Sprite {
     this.rotation = Math.random() * Math.PI * 2;
 
     this.desiredVector = {
-      rotation: Math.random() * 2 * Math.PI,
+      rotation: Math.random() * 2 * Math.PI, //this.rotation,
       magnitude: 1
     };
 
@@ -48,8 +48,12 @@ export class Boid extends PIXI.Sprite {
    */
   public getAngleToNeighbour(neighbour: Boid) {
     const coords = this.getNeighbourCoords(neighbour);
-    const angle = Math.atan(coords.y / coords.x);
-    if (coords.x < 0) {
+    return this.getAngleToPoint(coords.x, coords.y);
+  }
+
+  public getAngleToPoint(x: number, y: number) {
+    const angle = Math.atan(y / x);
+    if (x < 0) {
       return angle + Math.PI;
     }
     return angle;
@@ -75,6 +79,13 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.moveTo(0, 0).lineTo(x, y);
   }
 
+  public drawDebugVector(rotation: number, magnitude: number, color: number, alpha: number = 1, thickness: number = 1) {
+    const vecX = Math.sin(rotation) * this.desiredVector.magnitude * magnitude;
+    const vecY = Math.cos(rotation) * this.desiredVector.magnitude * magnitude;
+
+    this.drawDebugLine(vecX, vecY, color, alpha, thickness);
+  }
+
   public resetDebug() {
     this.debugInfo.text = '';
     this.debugInfo.rotation = -this.rotation;
@@ -82,6 +93,12 @@ export class Boid extends PIXI.Sprite {
     this.removeChild(this.debugNeighbours);
     this.debugNeighbours = new PIXI.Graphics();
     this.debugNeighbours.name = "debugNeighbours";
+
+    // draw desired direction vector
+    this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.SEPARATION);
+    this.debugLog(`current: ${Util.printAngle(this.rotation)}`);
+    this.debugLog(`desired: ${Util.printAngle(this.desiredVector.rotation)}`);
+
     this.addChild(this.debugNeighbours);
   }
 

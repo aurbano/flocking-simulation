@@ -43645,8 +43645,11 @@ var Boid = (function (_super) {
     };
     Boid.prototype.getAngleToNeighbour = function (neighbour) {
         var coords = this.getNeighbourCoords(neighbour);
-        var angle = Math.atan(coords.y / coords.x);
-        if (coords.x < 0) {
+        return this.getAngleToPoint(coords.x, coords.y);
+    };
+    Boid.prototype.getAngleToPoint = function (x, y) {
+        var angle = Math.atan(y / x);
+        if (x < 0) {
             return angle + Math.PI;
         }
         return angle;
@@ -43666,12 +43669,22 @@ var Boid = (function (_super) {
         this.debugNeighbours.lineStyle(thickness, color, alpha);
         this.debugNeighbours.moveTo(0, 0).lineTo(x, y);
     };
+    Boid.prototype.drawDebugVector = function (rotation, magnitude, color, alpha, thickness) {
+        if (alpha === void 0) { alpha = 1; }
+        if (thickness === void 0) { thickness = 1; }
+        var vecX = Math.sin(rotation) * this.desiredVector.magnitude * magnitude;
+        var vecY = Math.cos(rotation) * this.desiredVector.magnitude * magnitude;
+        this.drawDebugLine(vecX, vecY, color, alpha, thickness);
+    };
     Boid.prototype.resetDebug = function () {
         this.debugInfo.text = '';
         this.debugInfo.rotation = -this.rotation;
         this.removeChild(this.debugNeighbours);
         this.debugNeighbours = new graphics_3();
         this.debugNeighbours.name = "debugNeighbours";
+        this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.SEPARATION);
+        this.debugLog("current: " + Util.printAngle(this.rotation));
+        this.debugLog("desired: " + Util.printAngle(this.desiredVector.rotation));
         this.addChild(this.debugNeighbours);
     };
     Boid.prototype.debugLog = function (msg) {
@@ -43822,7 +43835,6 @@ var Renderer = (function () {
             var f_separation = 0;
             var f_alignment = 0;
             var f_predators = 0;
-            var f_obstacles = 0;
             var cohesionNeighbours = [];
             var separationNeighbours = [];
             var alignmentNeighbours = [];
@@ -43841,9 +43853,7 @@ var Renderer = (function () {
                 var distance = Util.distance(boid, neighbour);
                 if (this.options.debug) {
                     var neighbourAngle = boid.getAngleToNeighbour(neighbour);
-                    var endX = Math.sin(Math.PI / 2 - neighbourAngle) * distance;
-                    var endY = Math.cos(Math.PI / 2 - neighbourAngle) * distance;
-                    boid.drawDebugLine(endX, endY, COLORS.VISIBLE, 0.2);
+                    boid.drawDebugVector(Math.PI / 2 - neighbourAngle, distance, COLORS.VISIBLE, 0.2);
                 }
                 if (distance < this.options.separationRadius) {
                     separationNeighbours.push(neighbour);
@@ -43861,8 +43871,7 @@ var Renderer = (function () {
             boid.tint = 0xcccccc;
             if (separationNeighbours.length > 0) {
                 boid.tint = COLORS.SEPARATION;
-                f_separation =
-                    Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
+                f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
             }
             if (alignmentNeighbours.length > 0) {
                 boid.tint = COLORS.ALIGNMENT;
@@ -43879,16 +43888,18 @@ var Renderer = (function () {
             var mouseDistance = Util.distance(mouseCoords, boid);
             if (mouseDistance < this.options.predatorRadius) {
                 boid.tint = COLORS.SEPARATION;
-                f_predators =
-                    Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+                var localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
+                boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
+                f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI;
+                boid.debugLog("mouse = " + Util.printAngle(f_predators));
+                boid.drawDebugVector(f_predators, 100, 0xf7b12f, 1, 5);
             }
-            boid.rotation =
-                boid.rotation +
-                    (this.options.cohesionForce * f_cohesion) / 100 +
-                    (this.options.separationForce * f_separation) / 100 +
-                    (this.options.alignmentForce * f_alignment) / 100 +
-                    (this.options.predatorForce * f_predators) / 100 +
-                    (this.options.obstacleForce * f_obstacles) / 100;
+            boid.desiredVector.rotation = f_predators;
+            if (boid.desiredVector.rotation > 2 * Math.PI) {
+                var wraps = boid.desiredVector.rotation % (2 * Math.PI);
+                boid.desiredVector.rotation -= wraps * 2 * Math.PI;
+            }
+            boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
             var dx = Math.sin(boid.rotation) * this.options.speed;
             var dy = Math.cos(boid.rotation) * this.options.speed;
             boid.x -= dx * delta;
@@ -43941,6 +43952,7 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
+//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46445,6 +46457,7 @@ function setupGui(options, togglePause) {
     var general = gui.addFolder("General");
     general.open();
     general.add(options, "speed", 0, 25, 1);
+    general.add(options, "turningSpeed", 1, 500, 1);
     general.add(options, "visionAngle", 0, 180, 1);
     var heatmap = gui.addFolder("Heatmap");
     heatmap.open();
@@ -46485,19 +46498,19 @@ var options = {
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
     speed: 1,
+    turningSpeed: 100,
     visionAngle: 35,
-    cohesionRadius: 400,
+    cohesionRadius: 500,
     alignmentRadius: 60,
     separationRadius: 20,
-    predatorRadius: 0,
-    cohesionForce: 0,
+    predatorRadius: 400,
+    cohesionForce: 40,
     separationForce: 0,
     alignmentForce: 0,
-    predatorForce: 0,
+    predatorForce: 10,
     obstacleForce: 0,
 };
 var renderer = new Renderer(options);
 setupGui(options, renderer.togglePause);
 renderer.start();
-//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

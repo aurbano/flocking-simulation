@@ -16,17 +16,18 @@ const options: Options = {
   heatmapAttenuation: 1,
 
   speed: 1,
+  turningSpeed: 100,
   visionAngle: 35,
 
-  cohesionRadius: 400,
+  cohesionRadius: 500,
   alignmentRadius: 60,
   separationRadius: 20,
-  predatorRadius: 0,
+  predatorRadius: 400,
 
-  cohesionForce: 0,
+  cohesionForce: 40,
   separationForce: 0,
   alignmentForce: 0,
-  predatorForce: 0,
+  predatorForce: 10,
   obstacleForce: 0,
 };
 

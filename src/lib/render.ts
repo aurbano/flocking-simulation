@@ -194,9 +194,7 @@ export class Renderer {
 
         if (this.options.debug) {
           const neighbourAngle = boid.getAngleToNeighbour(neighbour);
-          const endX = Math.sin(Math.PI / 2 - neighbourAngle) * distance;
-          const endY = Math.cos(Math.PI / 2 - neighbourAngle) * distance;
-          boid.drawDebugLine(endX, endY, COLORS.VISIBLE, 0.2);
+          boid.drawDebugVector(Math.PI / 2 - neighbourAngle, distance, COLORS.VISIBLE, 0.2);
         }
 
         if (distance < this.options.separationRadius) {
@@ -221,8 +219,7 @@ export class Renderer {
       if (separationNeighbours.length > 0) {
         boid.tint = COLORS.SEPARATION;
         // separation makes it want to fly away from neighbours
-        f_separation =
-          Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
+        f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
       }
 
       if (alignmentNeighbours.length > 0) {
@@ -244,20 +241,27 @@ export class Renderer {
       // set the mouse as an enemy
       const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
       const mouseDistance = Util.distance(mouseCoords, boid);
+
       if (mouseDistance < this.options.predatorRadius) {
         boid.tint = COLORS.SEPARATION;
-        f_predators =
-          Util.getRotation(mouseCoords.x, mouseCoords.y, boid) + Math.PI;
+        const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
+        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
+
+        f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI;
+        boid.debugLog(`mouse = ` + Util.printAngle(f_predators));
+        boid.drawDebugVector(f_predators, 100, 0xf7b12f, 1, 5);
       }
 
       // Calculate the new direction of flight
-      boid.rotation =
-        boid.rotation +
-        (this.options.cohesionForce * f_cohesion) / 100 +
-        (this.options.separationForce * f_separation) / 100 +
-        (this.options.alignmentForce * f_alignment) / 100 +
-        (this.options.predatorForce * f_predators) / 100 +
-        (this.options.obstacleForce * f_obstacles) / 100;
+      boid.desiredVector.rotation = f_predators;
+
+      if (boid.desiredVector.rotation > 2 * Math.PI) {
+        const wraps = boid.desiredVector.rotation % (2 * Math.PI);
+        boid.desiredVector.rotation -= wraps * 2 * Math.PI;
+      }
+
+      // update direction
+      boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
 
       // Now use the angle and the speed to calculate dx and dy
       const dx = Math.sin(boid.rotation) * this.options.speed;

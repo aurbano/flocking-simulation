@@ -12,6 +12,7 @@ export type Options = {
   heatmapAttenuation: number,
 
   speed: number,
+  turningSpeed: number,
 
   visionAngle: number,
 
