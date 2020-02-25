@@ -43548,9 +43548,7 @@ var Util = (function () {
         return Math.atan2(mean_dy, mean_dx) - boid.rotation;
     };
     Util.distance = function (p1, p2) {
-        var dx = Math.abs(p2.x - p1.x);
-        var dy = Math.abs(p2.y - p1.y);
-        return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     };
     Util.arrayMean = function (arr, getKey) {
         var result = 0;
@@ -43594,11 +43592,16 @@ var textStyle = new text_4({
 });
 var Renderer = (function () {
     function Renderer(options) {
+        var _this = this;
         this.options = options;
         this.boids = [];
         this.heatmapCells = [];
         this.heatmapHistory = [];
         this.heatmapMax = 10;
+        this.paused = false;
+        this.togglePause = function () {
+            _this.paused = !_this.paused;
+        };
         this.app = new app_1({
             resizeTo: window,
             resolution: devicePixelRatio,
@@ -43671,24 +43674,39 @@ var Renderer = (function () {
             if (this.options.debug) {
                 var visionAngle = this.options.visionAngle * Math.PI / 180;
                 var graphics = new graphics_3();
-                graphics.beginFill(COLORS.ALIGNMENT, 0.1);
-                graphics.arc(0, 0, this.options.alignmentRadius, -visionAngle, visionAngle);
+                graphics.lineStyle(0);
+                graphics.beginFill(COLORS.SEPARATION, 0.25);
+                graphics.moveTo(0, 0)
+                    .arc(0, 0, this.options.separationRadius, Math.PI / 2, visionAngle + Math.PI / 2)
+                    .moveTo(0, 0)
+                    .arc(0, 0, this.options.separationRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
                 graphics.endFill();
-                graphics.lineStyle(1, COLORS.COHESION, 0.1);
-                graphics.drawCircle(0, 0, this.options.cohesionRadius);
-                graphics.lineStyle(1, COLORS.SEPARATION, 0.1);
-                graphics.drawCircle(0, 0, this.options.separationRadius);
+                graphics.beginFill(COLORS.ALIGNMENT, 0.2);
+                graphics.moveTo(0, 0)
+                    .arc(0, 0, this.options.alignmentRadius, Math.PI / 2, visionAngle + Math.PI / 2)
+                    .moveTo(0, 0)
+                    .arc(0, 0, this.options.alignmentRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
+                graphics.endFill();
+                graphics.beginFill(COLORS.COHESION, 0.1);
+                graphics.moveTo(0, 0)
+                    .arc(0, 0, this.options.cohesionRadius, Math.PI / 2, visionAngle + Math.PI / 2)
+                    .moveTo(0, 0)
+                    .arc(0, 0, this.options.cohesionRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
+                graphics.endFill();
                 graphics.name = 'circles';
-                var boidInfo = new text_2('boid ' + i, textStyle);
-                boidInfo.visible = false;
+                var boidInfo = new text_2('', textStyle);
+                boidInfo.visible = true;
+                boidInfo.name = 'text';
                 boid.addChild(boidInfo);
                 boid.addChild(graphics, boidInfo);
             }
         }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
-            _this.cooldownHeatmap();
-            _this.updateBoids(delta);
+            if (_this.paused) {
+                _this.cooldownHeatmap();
+                _this.updateBoids(delta);
+            }
             _this.stats.end();
         });
     };
@@ -43721,6 +43739,22 @@ var Renderer = (function () {
                 var neighbour = this.boids[a];
                 var neighbourCoords = boid.toLocal(new math_8(0, 0), neighbour);
                 var d = Util.distance(boid, neighbour);
+                var neighbourAngle = Math.atan(neighbourCoords.y / neighbourCoords.x);
+                if (neighbourCoords.x < 0) {
+                    neighbourAngle += Math.PI;
+                }
+                graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+                var endLength = Math.max(20, d);
+                var endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
+                var endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
+                graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+                graphics.moveTo(0, 0).lineTo(endX, endY);
+                graphics.lineStyle(1, COLORS.COHESION, 0.1);
+                graphics.moveTo(0, 0).lineTo(0, 400);
+                boid.addChild(graphics);
+                if (neighbourAngle > visionAngle || 2 * Math.PI - neighbourAngle > visionAngle) {
+                    continue;
+                }
                 if (d < this.options.separationRadius) {
                     separationNeighbours.push(neighbour);
                     shouldRenderDebug = true;
@@ -43736,11 +43770,16 @@ var Renderer = (function () {
                 if (d < this.options.cohesionRadius) {
                     cohesionNeighbours.push(neighbour);
                     shouldRenderDebug = true;
-                    graphics.lineStyle(1, COLORS.COHESION, 0.3);
+                    graphics.lineStyle(2, COLORS.COHESION, 0.7);
                     graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
                 }
             }
             if (this.options.debug) {
+                var textChild = boid.getChildByName('text');
+                var textSprite = textChild;
+                if (textSprite) {
+                    textSprite.rotation = -boid.rotation;
+                }
                 if (shouldRenderDebug) {
                     boid.addChild(graphics);
                 }
@@ -46317,7 +46356,7 @@ function updateDisplays(controllerArray) {
 var GUI$1 = GUI;
 //# sourceMappingURL=dat.gui.module.js.map
 
-function setupGui(options) {
+function setupGui(options, togglePause) {
     var gui = new GUI$1({
         name: 'Setings',
         closed: true,
@@ -46343,6 +46382,10 @@ function setupGui(options) {
     forces.add(options, 'alignmentForce', 0, 100, 1);
     forces.add(options, 'predatorForce', 0, 100, 1);
     forces.add(options, 'obstacleForce', 0, 100, 1);
+    var methods = {
+        togglePause: function () { togglePause(); },
+    };
+    gui.add(methods, 'togglePause');
     return gui;
 }
 //# sourceMappingURL=gui.js.map
@@ -46359,7 +46402,7 @@ var options = {
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
     speed: 1,
-    visionAngle: 45,
+    visionAngle: 35,
     cohesionRadius: 400,
     alignmentRadius: 60,
     separationRadius: 20,
@@ -46371,7 +46414,7 @@ var options = {
     obstacleForce: 0,
 };
 var renderer = new Renderer(options);
-setupGui(options);
+setupGui(options, renderer.togglePause);
 renderer.start();
 //# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

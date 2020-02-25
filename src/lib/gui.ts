@@ -1,7 +1,7 @@
 import * as dat from 'dat.gui';
 import { Options } from '../model/types';
 
-export function setupGui(options: Options) {
+export function setupGui(options: Options, togglePause: Function) {
   const gui = new dat.GUI({
     name: 'Setings',
     closed: true,
@@ -31,6 +31,12 @@ export function setupGui(options: Options) {
   forces.add(options, 'alignmentForce', 0, 100, 1);
   forces.add(options, 'predatorForce', 0, 100, 1);
   forces.add(options, 'obstacleForce', 0, 100, 1);
+
+  const methods = {
+    togglePause: () => { togglePause() },
+  };
+
+  gui.add(methods, 'togglePause');
 
   return gui;
 }

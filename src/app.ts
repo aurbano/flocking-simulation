@@ -16,7 +16,7 @@ const options: Options = {
   heatmapAttenuation: 1,
 
   speed: 1,
-  visionAngle: 45,
+  visionAngle: 35,
 
   cohesionRadius: 400,
   alignmentRadius: 60,
@@ -33,6 +33,6 @@ const options: Options = {
 // Setup the Renderer
 const renderer = new Renderer(options);
 
-setupGui(options);
+setupGui(options, renderer.togglePause);
 
 renderer.start();

@@ -31,9 +31,10 @@ export class Util {
 
     public static distance(p1: Position, p2: Position) {
         // Approximation by using octagons approach
-        const dx = Math.abs(p2.x - p1.x);
-        const dy = Math.abs(p2.y - p1.y);
-        return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));	
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        // const dx = Math.abs(p2.x - p1.x);
+        // const dy = Math.abs(p2.y - p1.y);
+        // return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));	
     }
 
     public static arrayMean(arr: Array<any>, getKey: Function) {

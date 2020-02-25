@@ -34,6 +34,8 @@ export class Renderer {
 
   private stats: Stats;
 
+  private paused: boolean = false;
+
   constructor(private options: Options) {
     this.app = new PIXI.Application({
       resizeTo: window,
@@ -137,20 +139,34 @@ export class Renderer {
         const visionAngle = this.options.visionAngle * Math.PI / 180;
 
         const graphics = new PIXI.Graphics();
-        graphics.beginFill(COLORS.ALIGNMENT, 0.1)
-        graphics.arc(0, 0, this.options.alignmentRadius, -visionAngle, visionAngle);
+        // boids vision
+        graphics.lineStyle(0)
+        graphics.beginFill(COLORS.SEPARATION, 0.25);
+        graphics.moveTo(0,0)
+                .arc(0, 0, this.options.separationRadius, Math.PI / 2, visionAngle + Math.PI / 2)
+                .moveTo(0,0)
+                .arc(0, 0, this.options.separationRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
         graphics.endFill();
   
-        graphics.lineStyle(1, COLORS.COHESION, 0.1)
-        graphics.drawCircle(0, 0, this.options.cohesionRadius);
+        graphics.beginFill(COLORS.ALIGNMENT, 0.2);
+        graphics.moveTo(0,0)
+                .arc(0, 0, this.options.alignmentRadius, Math.PI / 2, visionAngle + Math.PI / 2)
+                .moveTo(0,0)
+                .arc(0, 0, this.options.alignmentRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
+        graphics.endFill();
   
-        graphics.lineStyle(1, COLORS.SEPARATION, 0.1)
-        graphics.drawCircle(0, 0, this.options.separationRadius);
+        graphics.beginFill(COLORS.COHESION, 0.1);
+        graphics.moveTo(0,0)
+                .arc(0, 0, this.options.cohesionRadius, Math.PI / 2, visionAngle + Math.PI / 2)
+                .moveTo(0,0)
+                .arc(0, 0, this.options.cohesionRadius, Math.PI / 2 - visionAngle, Math.PI / 2);
+        graphics.endFill();
   
         graphics.name = 'circles';
 
-        const boidInfo = new PIXI.Text('boid ' + i, textStyle);
-        boidInfo.visible = false;
+        const boidInfo = new PIXI.Text('', textStyle);
+        boidInfo.visible = true;
+        boidInfo.name = 'text';
         boid.addChild(boidInfo);
   
         boid.addChild(graphics, boidInfo);
@@ -161,11 +177,17 @@ export class Renderer {
     this.app.ticker.add((delta) => {
       this.stats.begin();
 
-      this.cooldownHeatmap();
-      this.updateBoids(delta);
+      if (this.paused) {
+        this.cooldownHeatmap();
+        this.updateBoids(delta);
+      }
 
       this.stats.end();
     });
+  }
+
+  public togglePause = () => {
+    this.paused = !this.paused;
   }
 
   private updateBoids(delta: number) {
@@ -217,15 +239,38 @@ export class Renderer {
           neighbour
         );
 
-        // angle to each neighbour
-        // const neighbourAngle = Math.atan2(neighbour.y - boid.y, neighbour.x - boid.x);
-        // const angleFromDirection = boid.rotation - neighbourAngle;
-
-        // if (angleFromDirection > visionAngle || angleFromDirection < -visionAngle) {
-        //   continue;
-        // }
-
         const d = Util.distance(boid, neighbour);
+
+        // angle to each neighbour from the direction of flight of the boid
+        let neighbourAngle = Math.atan(neighbourCoords.y / neighbourCoords.x);
+        if (neighbourCoords.x < 0) {
+          neighbourAngle += Math.PI;
+        }
+
+        graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+        const endLength = Math.max(20, d);
+        const endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
+        const endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
+        graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+        graphics.moveTo(0, 0).lineTo(endX, endY);
+
+        graphics.lineStyle(1, COLORS.COHESION, 0.1);
+        graphics.moveTo(0, 0).lineTo(0, 400);
+
+        boid.addChild(graphics);
+
+        // const textChild: any = boid.getChildByName('text');
+        // const textSprite: PIXI.Text = textChild;
+        // if (textSprite) {
+        //   textSprite.rotation = -boid.rotation;
+        //   textSprite.text = 'me = ' + boid.rotation +  ' n = ' + neighbourAngle + '\n' +
+        //                     'diff ('+ Math.round(neighbourCoords.x) + ', ' + Math.round(neighbourCoords.y) + ')\n' +
+        //                     'd = ' + endLength;
+        // }
+        
+        if (neighbourAngle > visionAngle || 2 * Math.PI - neighbourAngle > visionAngle) {
+          continue;
+        }
 
         if (d < this.options.separationRadius) {
           separationNeighbours.push(neighbour);
@@ -247,17 +292,19 @@ export class Renderer {
           cohesionNeighbours.push(neighbour);
 
           shouldRenderDebug = true;
-          graphics.lineStyle(1, COLORS.COHESION, 0.3);
+          graphics.lineStyle(2, COLORS.COHESION, 0.7);
           graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
         }  
       }
 
       if (this.options.debug) {
         // debug text
-        // const textChild: any = boid.getChildByName('text');
-        // const textSprite: PIXI.Text = textChild;
-        // textSprite.rotation = -boid.rotation;
-        // textSprite.text = '';
+        const textChild: any = boid.getChildByName('text');
+        const textSprite: PIXI.Text = textChild;
+        if (textSprite) {
+          textSprite.rotation = -boid.rotation;
+          // textSprite.text = '';
+        }
         if (shouldRenderDebug) {
           boid.addChild(graphics);
         }
