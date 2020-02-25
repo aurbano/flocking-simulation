@@ -48,13 +48,15 @@ export class Renderer {
     this.stats.showPanel(0);
     document.body.appendChild( this.stats.dom );
 
-    // this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
-    //   position: true,
-    //   rotation: true,
-    //   tint: true,
-    // });
-
-    this.boidContainer = new PIXI.Container();
+    if (!this.options.debug) {
+      this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
+        position: true,
+        rotation: true,
+        tint: true,
+      });
+    } else {
+      this.boidContainer = new PIXI.Container();
+    }
 
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
@@ -92,6 +94,13 @@ export class Renderer {
 
     // Render the app
     document.getElementById(this.options.containerId).appendChild(this.app.view);
+
+    // Pause on spacebar
+    document.body.onkeyup = (e: KeyboardEvent) => {
+      if (e.keyCode == 32){
+          this.togglePause();
+      }
+    }
   }
 
   public start() {
@@ -167,6 +176,7 @@ export class Renderer {
         const boidInfo = new PIXI.Text('', textStyle);
         boidInfo.visible = true;
         boidInfo.name = 'text';
+        boidInfo.zIndex = 9;
         boid.addChild(boidInfo);
   
         boid.addChild(graphics, boidInfo);
@@ -177,7 +187,7 @@ export class Renderer {
     this.app.ticker.add((delta) => {
       this.stats.begin();
 
-      if (this.paused) {
+      if (!this.paused) {
         this.cooldownHeatmap();
         this.updateBoids(delta);
       }
@@ -190,6 +200,10 @@ export class Renderer {
     this.paused = !this.paused;
   }
 
+  /**
+   * Boids fly towards their positive y axis, with the positive x axis on their left
+   * @param delta
+   */
   private updateBoids(delta: number) {
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
@@ -225,7 +239,9 @@ export class Renderer {
       graphics.name = 'neighbours';
       let shouldRenderDebug = false;
 
-      // Iterate over the rest of the boids
+      let text: string[] = [`[${i}]`];
+
+      // Iterate over the rest of the boids to find neighbours
       for (let a = 0; a < totalBoids; a++) {
         if (a === i) {
           continue;
@@ -240,61 +256,73 @@ export class Renderer {
         );
 
         const d = Util.distance(boid, neighbour);
+        let visible = false;
 
-        // angle to each neighbour from the direction of flight of the boid
+        // angle to each neighbour measured from the x axis
         let neighbourAngle = Math.atan(neighbourCoords.y / neighbourCoords.x);
         if (neighbourCoords.x < 0) {
           neighbourAngle += Math.PI;
         }
+        let neighbourAngleFromY = neighbourAngle - Math.PI / 2;
+        if (neighbourAngleFromY < 0) {
+          neighbourAngleFromY += 2 * Math.PI;
+        }
 
-        graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+        if (neighbourAngleFromY < visionAngle || neighbourAngleFromY > 2 * Math.PI - visionAngle) {
+          visible = true;
+        }
+
+        text.push(`n${a} = ${Util.printAngle(neighbourAngle)} | ${Util.printAngle(neighbourAngleFromY)} | (${visible})`);
+
         const endLength = Math.max(20, d);
         const endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
         const endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
-        graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+
+        if (!visible) {
+          graphics.lineStyle(1, COLORS.ALIGNMENT, 0.1);
+        } else {
+          graphics.lineStyle(1, COLORS.ALIGNMENT, 0.7);
+        }
         graphics.moveTo(0, 0).lineTo(endX, endY);
 
-        graphics.lineStyle(1, COLORS.COHESION, 0.1);
-        graphics.moveTo(0, 0).lineTo(0, 400);
+        // draw the axis
+        graphics.lineStyle(1, COLORS.COHESION, 0.05);
+        graphics.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
+
+        // x axis
+        graphics.lineStyle(1, 0x0000eb, 0.5);
+        graphics.moveTo(0, 0).lineTo(100, 0);
+        graphics.lineStyle(1, COLORS.SEPARATION, 0.5);
+        graphics.moveTo(-100, 0).lineTo(0, 0);
 
         boid.addChild(graphics);
 
-        // const textChild: any = boid.getChildByName('text');
-        // const textSprite: PIXI.Text = textChild;
-        // if (textSprite) {
-        //   textSprite.rotation = -boid.rotation;
-        //   textSprite.text = 'me = ' + boid.rotation +  ' n = ' + neighbourAngle + '\n' +
-        //                     'diff ('+ Math.round(neighbourCoords.x) + ', ' + Math.round(neighbourCoords.y) + ')\n' +
-        //                     'd = ' + endLength;
-        // }
         
-        if (neighbourAngle > visionAngle || 2 * Math.PI - neighbourAngle > visionAngle) {
-          continue;
+        if (visible) {
+          if (d < this.options.separationRadius) {
+            separationNeighbours.push(neighbour);
+
+            shouldRenderDebug = true;
+            graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+            graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+          }
+
+          if (d < this.options.alignmentRadius) {
+            alignmentNeighbours.push(neighbour);
+
+            shouldRenderDebug = true;
+            graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+            graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+          }
+
+          if (d < this.options.cohesionRadius) {
+            cohesionNeighbours.push(neighbour);
+
+            shouldRenderDebug = true;
+            graphics.lineStyle(2, COLORS.COHESION, 0.7);
+            graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+          }  
         }
-
-        if (d < this.options.separationRadius) {
-          separationNeighbours.push(neighbour);
-
-          shouldRenderDebug = true;
-          graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
-          graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
-        }
-
-        if (d < this.options.alignmentRadius) {
-          alignmentNeighbours.push(neighbour);
-
-          shouldRenderDebug = true;
-          graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
-          graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
-        }
-
-        if (d < this.options.cohesionRadius) {
-          cohesionNeighbours.push(neighbour);
-
-          shouldRenderDebug = true;
-          graphics.lineStyle(2, COLORS.COHESION, 0.7);
-          graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
-        }  
       }
 
       if (this.options.debug) {
@@ -303,11 +331,11 @@ export class Renderer {
         const textSprite: PIXI.Text = textChild;
         if (textSprite) {
           textSprite.rotation = -boid.rotation;
-          // textSprite.text = '';
+          textSprite.text = text.join('\n');
         }
-        if (shouldRenderDebug) {
-          boid.addChild(graphics);
-        }
+        // if (shouldRenderDebug) {
+        //   boid.addChild(graphics);
+        // }
       }
 
       boid.tint = 0xcccccc;

@@ -43547,6 +43547,9 @@ var Util = (function () {
         var mean_dy = meanY - boid.y;
         return Math.atan2(mean_dy, mean_dx) - boid.rotation;
     };
+    Util.printAngle = function (rad) {
+        return Math.round(rad * 180 / Math.PI);
+    };
     Util.distance = function (p1, p2) {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     };
@@ -43611,7 +43614,16 @@ var Renderer = (function () {
         this.stats = new stats_min();
         this.stats.showPanel(0);
         document.body.appendChild(this.stats.dom);
-        this.boidContainer = new display_2();
+        if (!this.options.debug) {
+            this.boidContainer = new particles_1(this.options.number, {
+                position: true,
+                rotation: true,
+                tint: true,
+            });
+        }
+        else {
+            this.boidContainer = new display_2();
+        }
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
         var gridItems = (maxX / this.options.heatmapGridSize) * (maxY / this.options.heatmapGridSize);
@@ -43641,6 +43653,11 @@ var Renderer = (function () {
         region = new math_11(0, 0, options.heatmapGridSize, options.heatmapGridSize);
         this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
         document.getElementById(this.options.containerId).appendChild(this.app.view);
+        document.body.onkeyup = function (e) {
+            if (e.keyCode == 32) {
+                _this.togglePause();
+            }
+        };
     }
     Renderer.prototype.start = function () {
         var _this = this;
@@ -43697,13 +43714,14 @@ var Renderer = (function () {
                 var boidInfo = new text_2('', textStyle);
                 boidInfo.visible = true;
                 boidInfo.name = 'text';
+                boidInfo.zIndex = 9;
                 boid.addChild(boidInfo);
                 boid.addChild(graphics, boidInfo);
             }
         }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
-            if (_this.paused) {
+            if (!_this.paused) {
                 _this.cooldownHeatmap();
                 _this.updateBoids(delta);
             }
@@ -43731,7 +43749,7 @@ var Renderer = (function () {
             var alignmentNeighbours = [];
             var graphics = new graphics_3();
             graphics.name = 'neighbours';
-            var shouldRenderDebug = false;
+            var text = ["[" + i + "]"];
             for (var a = 0; a < totalBoids; a++) {
                 if (a === i) {
                     continue;
@@ -43739,39 +43757,52 @@ var Renderer = (function () {
                 var neighbour = this.boids[a];
                 var neighbourCoords = boid.toLocal(new math_8(0, 0), neighbour);
                 var d = Util.distance(boid, neighbour);
+                var visible = false;
                 var neighbourAngle = Math.atan(neighbourCoords.y / neighbourCoords.x);
                 if (neighbourCoords.x < 0) {
                     neighbourAngle += Math.PI;
                 }
-                graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+                var neighbourAngleFromY = neighbourAngle - Math.PI / 2;
+                if (neighbourAngleFromY < 0) {
+                    neighbourAngleFromY += 2 * Math.PI;
+                }
+                if (neighbourAngleFromY < visionAngle || neighbourAngleFromY > 2 * Math.PI - visionAngle) {
+                    visible = true;
+                }
+                text.push("n" + a + " = " + Util.printAngle(neighbourAngle) + " | " + Util.printAngle(neighbourAngleFromY) + " | (" + visible + ")");
                 var endLength = Math.max(20, d);
                 var endX = Math.sin(Math.PI / 2 - neighbourAngle) * endLength;
                 var endY = Math.cos(Math.PI / 2 - neighbourAngle) * endLength;
-                graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+                if (!visible) {
+                    graphics.lineStyle(1, COLORS.ALIGNMENT, 0.1);
+                }
+                else {
+                    graphics.lineStyle(1, COLORS.ALIGNMENT, 0.7);
+                }
                 graphics.moveTo(0, 0).lineTo(endX, endY);
-                graphics.lineStyle(1, COLORS.COHESION, 0.1);
-                graphics.moveTo(0, 0).lineTo(0, 400);
+                graphics.lineStyle(1, COLORS.COHESION, 0.05);
+                graphics.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
+                graphics.lineStyle(1, 0x0000eb, 0.5);
+                graphics.moveTo(0, 0).lineTo(100, 0);
+                graphics.lineStyle(1, COLORS.SEPARATION, 0.5);
+                graphics.moveTo(-100, 0).lineTo(0, 0);
                 boid.addChild(graphics);
-                if (neighbourAngle > visionAngle || 2 * Math.PI - neighbourAngle > visionAngle) {
-                    continue;
-                }
-                if (d < this.options.separationRadius) {
-                    separationNeighbours.push(neighbour);
-                    shouldRenderDebug = true;
-                    graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
-                    graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
-                }
-                if (d < this.options.alignmentRadius) {
-                    alignmentNeighbours.push(neighbour);
-                    shouldRenderDebug = true;
-                    graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
-                    graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
-                }
-                if (d < this.options.cohesionRadius) {
-                    cohesionNeighbours.push(neighbour);
-                    shouldRenderDebug = true;
-                    graphics.lineStyle(2, COLORS.COHESION, 0.7);
-                    graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+                if (visible) {
+                    if (d < this.options.separationRadius) {
+                        separationNeighbours.push(neighbour);
+                        graphics.lineStyle(1, COLORS.SEPARATION, 0.3);
+                        graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+                    }
+                    if (d < this.options.alignmentRadius) {
+                        alignmentNeighbours.push(neighbour);
+                        graphics.lineStyle(1, COLORS.ALIGNMENT, 0.3);
+                        graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+                    }
+                    if (d < this.options.cohesionRadius) {
+                        cohesionNeighbours.push(neighbour);
+                        graphics.lineStyle(2, COLORS.COHESION, 0.7);
+                        graphics.moveTo(0, 0).lineTo(neighbourCoords.x, neighbourCoords.y);
+                    }
                 }
             }
             if (this.options.debug) {
@@ -43779,9 +43810,7 @@ var Renderer = (function () {
                 var textSprite = textChild;
                 if (textSprite) {
                     textSprite.rotation = -boid.rotation;
-                }
-                if (shouldRenderDebug) {
-                    boid.addChild(graphics);
+                    textSprite.text = text.join('\n');
                 }
             }
             boid.tint = 0xcccccc;
@@ -43860,6 +43889,7 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
+//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46394,7 +46424,7 @@ var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: 5,
+    number: 3,
     heatmapGridSize: 10,
     background: 0x111111,
     debug: true,
@@ -46407,7 +46437,7 @@ var options = {
     alignmentRadius: 60,
     separationRadius: 20,
     predatorRadius: 0,
-    cohesionForce: 50,
+    cohesionForce: 0,
     separationForce: 0,
     alignmentForce: 0,
     predatorForce: 0,
@@ -46416,5 +46446,4 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options, renderer.togglePause);
 renderer.start();
-//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

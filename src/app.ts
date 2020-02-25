@@ -6,7 +6,7 @@ const options: Options = {
   containerId: 'flock',
   boidLength: 5,
   boidHeight: 10,
-  number: 5,
+  number: 3,
   heatmapGridSize: 10,
   background: 0x111111,
   debug: true,
@@ -23,7 +23,7 @@ const options: Options = {
   separationRadius: 20,
   predatorRadius: 0,
 
-  cohesionForce: 50,
+  cohesionForce: 0,
   separationForce: 0,
   alignmentForce: 0,
   predatorForce: 0,

@@ -29,6 +29,10 @@ export class Util {
         return Math.atan2(mean_dy, mean_dx) - boid.rotation;
     }
 
+    public static printAngle(rad: number) {
+        return Math.round(rad * 180 / Math.PI);
+    }
+
     public static distance(p1: Position, p2: Position) {
         // Approximation by using octagons approach
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
