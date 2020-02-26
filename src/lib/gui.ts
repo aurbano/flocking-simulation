@@ -1,22 +1,23 @@
 import * as dat from "dat.gui";
 import { Options } from "../model/types";
+import { Renderer } from "./render";
 
-export function setupGui(options: Options, reset: Function, togglePause: Function) {
+export function setupGui(options: Options, renderer: Renderer) {
   const gui = new dat.GUI({
     name: "Setings",
-    closed: true
+    closed: false,
   });
 
   const core = gui.addFolder("Core");
   core.open();
-  core.add(options, "boidLength", 1, 50, 1).onFinishChange(() => { reset(); });
-  core.add(options, "boidHeight", 1, 50, 1).onFinishChange(() => { reset(); });
-  core.add(options, "number", 1, 1000, 1).onFinishChange(() => { reset(); });
-  core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(() => { reset(); });
+  core.add(options, "boidLength", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
+  core.add(options, "boidHeight", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
+  core.add(options, "number", 1, 1000, 1).onFinishChange(() => { renderer.reset(); });
+  core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
 
   const general = gui.addFolder("General");
   general.open();
-  general.add(options, "speed", 0, 25, 1);
+  general.add(options, "speed", 0, 25, 1).onChange(() => { renderer.updateSettings(); });
   general.add(options, "turningSpeed", 1, 500, 1);
   general.add(options, "visionAngle", 0, 180, 1);
 
@@ -42,11 +43,13 @@ export function setupGui(options: Options, reset: Function, togglePause: Functio
 
   const methods = {
     togglePause: () => {
-      togglePause();
+      renderer.togglePause();
     }
   };
 
   gui.add(methods, "togglePause");
+
+  gui.hide();
 
   return gui;
 }

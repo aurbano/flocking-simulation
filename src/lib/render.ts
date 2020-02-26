@@ -20,8 +20,6 @@ export class Renderer {
 
   private stats: Stats;
 
-  private paused: boolean = false;
-
   constructor(private options: Options) {
     this.app = new PIXI.Application({
       resizeTo: window,
@@ -47,6 +45,7 @@ export class Renderer {
     this.app.stage.addChild(this.boidContainer);
 
     this.reset();
+    this.updateSettings();
 
     // Render the app
     document
@@ -59,24 +58,20 @@ export class Renderer {
         this.togglePause();
       }
     };
-  }
 
-  public start() {
-    // Listen for animate update
+    // Setup animation loop
     this.app.ticker.add(delta => {
       this.stats.begin();
 
-      if (!this.paused) {
-        this.cooldownHeatmap();
-        this.updateBoids(delta);
-      }
+      this.cooldownHeatmap();
+      this.updateBoids(delta);
 
       this.stats.end();
     });
   }
 
   public reset = () => {
-    this.paused = true;
+    this.stop();
 
     this.boidContainer.removeChildren();
     this.boids = [];
@@ -99,12 +94,24 @@ export class Renderer {
 
     // Make sure everything is ready to render again
     setTimeout(() => {
-      this.paused = false;
+      this.start();
     }, 100);
   }
 
+  public start() {
+    this.app.ticker.start();
+  }
+
+  public stop() {
+    this.app.ticker.stop();
+  }
+
   public togglePause = () => {
-    this.paused = !this.paused;
+    this.app.ticker.started ? this.stop() : this.start();
+  };
+
+  public updateSettings = () => {
+    this.app.ticker.speed = this.options.speed;
   };
 
   private updateBoids(delta: number) {
@@ -116,11 +123,11 @@ export class Renderer {
       const boid = this.boids[i];
 
       // Forces that determine flocking
-      let f_cohesion: number = 0; // steer towards average position of neighbours (long range attraction)
-      let f_separation: number = 0; // avoid crowding neighbours (short range repulsion)
-      let f_alignment: number = 0; // steer towards average heading of neighbours
-      let f_predators: number = 0; // avoid predators
-      let f_obstacles: number = 0; // avoid obstacles (same as predators but with less margin)
+      let f_cohesion: number = boid.desiredVector.rotation; // steer towards average position of neighbours (long range attraction)
+      let f_separation: number = boid.desiredVector.rotation; // avoid crowding neighbours (short range repulsion)
+      let f_alignment: number = boid.desiredVector.rotation; // steer towards average heading of neighbours
+      let f_predators: number = boid.desiredVector.rotation; // avoid predators
+      let f_obstacles: number = boid.desiredVector.rotation; // avoid obstacles (same as predators but with less margin)
 
       // Find important neighbours
       const cohesionNeighbours: Boid[] = [];
@@ -204,7 +211,7 @@ export class Renderer {
       }
 
       // TODO: Figure out how to calculate the new desired rotation combining all the forces
-      boid.desiredVector.rotation += f_predators;
+      boid.desiredVector.rotation = f_predators;
 
       // unwrap the desired vector
       if (boid.desiredVector.rotation > 2.5 * Math.PI) {
@@ -216,11 +223,11 @@ export class Renderer {
       boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
 
       // Now use the angle and the speed to calculate dx and dy
-      const dx = Math.sin(boid.rotation) * this.options.speed;
-      const dy = Math.cos(boid.rotation) * this.options.speed;
+      const dx = Math.sin(boid.rotation) * delta;
+      const dy = Math.cos(boid.rotation) * delta;
 
-      boid.x -= dx * delta;
-      boid.y += dy * delta;
+      boid.x -= dx;
+      boid.y += dy;
 
       this.updateHeatmapCell(boid.x, boid.y);
 

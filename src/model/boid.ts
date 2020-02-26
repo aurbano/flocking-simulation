@@ -182,16 +182,20 @@ export class Boid extends PIXI.Sprite {
       this.debugVision
     );
 
-    // draw the central axis
+    // y+
     this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
     this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
 
-    // // x+ axis
-    // this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
-    // this.debugVision.moveTo(0, 0).lineTo(100, 0);
-    // // x- axis
-    // this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);
-    // this.debugVision.moveTo(-100, 0).lineTo(0, 0);
+    // y-
+    this.debugVision.lineStyle(1, COLORS.COHESION, 0.3);
+    this.debugVision.moveTo(0, -100).lineTo(0, 0);
+
+    // x+ axis
+    this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
+    this.debugVision.moveTo(0, 0).lineTo(100, 0);
+    // x- axis
+    this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);
+    this.debugVision.moveTo(-100, 0).lineTo(0, 0);
 
     this.debugInfo = new PIXI.Text("", textStyle);
     this.debugInfo.name = "debugInfo";

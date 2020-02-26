@@ -688,7 +688,6 @@ function isMobile(userAgent) {
         result.apple.tablet || result.android.tablet || result.windows.tablet;
     return result;
 }
-//# sourceMappingURL=isMobile.js.map
 
 var settings_1 = createCommonjsModule(function (module, exports) {
 
@@ -1008,7 +1007,7 @@ var settings = {
 
 exports.isMobile = isMobile$1;
 exports.settings = settings;
-//# sourceMappingURL=settings.js.map
+
 });
 
 unwrapExports(settings_1);
@@ -3534,7 +3533,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     MASK_TYPES[MASK_TYPES["STENCIL"] = 2] = "STENCIL";
     MASK_TYPES[MASK_TYPES["SPRITE"] = 3] = "SPRITE";
 })(exports.MASK_TYPES || (exports.MASK_TYPES = {}));
-//# sourceMappingURL=constants.js.map
+
 });
 
 unwrapExports(constants);
@@ -4480,7 +4479,7 @@ exports.skipHello = skipHello;
 exports.string2hex = string2hex;
 exports.trimCanvas = trimCanvas;
 exports.uid = uid;
-//# sourceMappingURL=utils.js.map
+
 });
 
 unwrapExports(utils);
@@ -6441,7 +6440,7 @@ exports.Rectangle = Rectangle;
 exports.RoundedRectangle = RoundedRectangle;
 exports.Transform = Transform;
 exports.groupD8 = groupD8;
-//# sourceMappingURL=math.js.map
+
 });
 
 unwrapExports(math);
@@ -8364,7 +8363,7 @@ Container.prototype.containerUpdateTransform = Container.prototype.updateTransfo
 exports.Bounds = Bounds;
 exports.Container = Container;
 exports.DisplayObject = DisplayObject;
-//# sourceMappingURL=display.js.map
+
 });
 
 unwrapExports(display);
@@ -9067,7 +9066,7 @@ AccessibilityManager.prototype.destroy = function destroy ()
 
 exports.AccessibilityManager = AccessibilityManager;
 exports.accessibleTarget = accessibleTarget;
-//# sourceMappingURL=accessibility.js.map
+
 });
 
 unwrapExports(accessibility);
@@ -9915,7 +9914,7 @@ var TickerPlugin = /** @class */ (function () {
 
 exports.Ticker = Ticker;
 exports.TickerPlugin = TickerPlugin;
-//# sourceMappingURL=ticker.js.map
+
 });
 
 unwrapExports(ticker);
@@ -12526,7 +12525,7 @@ exports.InteractionEvent = InteractionEvent;
 exports.InteractionManager = InteractionManager;
 exports.InteractionTrackingData = InteractionTrackingData;
 exports.interactiveTarget = interactiveTarget;
-//# sourceMappingURL=interaction.js.map
+
 });
 
 unwrapExports(interaction);
@@ -12730,7 +12729,7 @@ Object.defineProperties(Runner.prototype, {
 });
 
 exports.Runner = Runner;
-//# sourceMappingURL=runner.js.map
+
 });
 
 unwrapExports(runner);
@@ -25835,7 +25834,7 @@ exports.defaultFilterVertex = defaultFilter;
 exports.defaultVertex = _default;
 exports.resources = index;
 exports.systems = systems;
-//# sourceMappingURL=core.js.map
+
 });
 
 unwrapExports(core);
@@ -26106,7 +26105,7 @@ ResizePlugin.destroy = function destroy ()
 Application.registerPlugin(ResizePlugin);
 
 exports.Application = Application;
-//# sourceMappingURL=app.js.map
+
 });
 
 unwrapExports(app);
@@ -26397,7 +26396,7 @@ Extract.arrayPostDivide = function arrayPostDivide (pixels, out)
 };
 
 exports.Extract = Extract;
-//# sourceMappingURL=extract.js.map
+
 });
 
 unwrapExports(extract);
@@ -28932,7 +28931,6 @@ Loader.use = function LoaderUseStatic(fn) {
 
   return Loader;
 };
-//# sourceMappingURL=resource-loader.esm.js.map
 
 var resourceLoader_esm = /*#__PURE__*/Object.freeze({
 	__proto__: null,
@@ -29248,7 +29246,7 @@ exports.AppLoaderPlugin = AppLoaderPlugin;
 exports.Loader = Loader;
 exports.LoaderResource = LoaderResource;
 exports.TextureLoader = TextureLoader;
-//# sourceMappingURL=loaders.js.map
+
 });
 
 unwrapExports(loaders);
@@ -30238,7 +30236,7 @@ var ParticleRenderer = /*@__PURE__*/(function (ObjectRenderer) {
 
 exports.ParticleContainer = ParticleContainer;
 exports.ParticleRenderer = ParticleRenderer;
-//# sourceMappingURL=particles.js.map
+
 });
 
 unwrapExports(particles);
@@ -34059,7 +34057,7 @@ exports.GraphicsData = GraphicsData;
 exports.GraphicsGeometry = GraphicsGeometry;
 exports.LineStyle = LineStyle;
 exports.graphicsUtils = index;
-//# sourceMappingURL=graphics.js.map
+
 });
 
 unwrapExports(graphics);
@@ -34752,7 +34750,7 @@ var Sprite = /*@__PURE__*/(function (Container) {
 }(display.Container));
 
 exports.Sprite = Sprite;
-//# sourceMappingURL=sprite.js.map
+
 });
 
 unwrapExports(sprite);
@@ -37064,7 +37062,7 @@ exports.TEXT_GRADIENT = TEXT_GRADIENT;
 exports.Text = Text;
 exports.TextMetrics = TextMetrics;
 exports.TextStyle = TextStyle;
-//# sourceMappingURL=text.js.map
+
 });
 
 unwrapExports(text);
@@ -37806,7 +37804,7 @@ exports.BasePrepare = BasePrepare;
 exports.CountLimiter = CountLimiter;
 exports.Prepare = Prepare;
 exports.TimeLimiter = TimeLimiter;
-//# sourceMappingURL=prepare.js.map
+
 });
 
 unwrapExports(prepare);
@@ -38226,7 +38224,7 @@ SpritesheetLoader.getResourcePath = function getResourcePath (resource, baseUrl)
 
 exports.Spritesheet = Spritesheet;
 exports.SpritesheetLoader = SpritesheetLoader;
-//# sourceMappingURL=spritesheet.js.map
+
 });
 
 unwrapExports(spritesheet);
@@ -38742,7 +38740,7 @@ var TilingSpriteRenderer = /*@__PURE__*/(function (ObjectRenderer) {
 
 exports.TilingSprite = TilingSprite;
 exports.TilingSpriteRenderer = TilingSpriteRenderer;
-//# sourceMappingURL=sprite-tiling.js.map
+
 });
 
 unwrapExports(spriteTiling);
@@ -39581,7 +39579,7 @@ BitmapFontLoader.use = function use (resource, next)
 
 exports.BitmapFontLoader = BitmapFontLoader;
 exports.BitmapText = BitmapText;
-//# sourceMappingURL=text-bitmap.js.map
+
 });
 
 unwrapExports(textBitmap);
@@ -39651,7 +39649,7 @@ var AlphaFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.AlphaFilter = AlphaFilter;
-//# sourceMappingURL=filter-alpha.js.map
+
 });
 
 unwrapExports(filterAlpha);
@@ -40083,7 +40081,7 @@ var BlurFilter = /*@__PURE__*/(function (Filter) {
 
 exports.BlurFilter = BlurFilter;
 exports.BlurFilterPass = BlurFilterPass;
-//# sourceMappingURL=filter-blur.js.map
+
 });
 
 unwrapExports(filterBlur);
@@ -40687,7 +40685,7 @@ var ColorMatrixFilter = /*@__PURE__*/(function (Filter) {
 ColorMatrixFilter.prototype.grayscale = ColorMatrixFilter.prototype.greyscale;
 
 exports.ColorMatrixFilter = ColorMatrixFilter;
-//# sourceMappingURL=filter-color-matrix.js.map
+
 });
 
 unwrapExports(filterColorMatrix);
@@ -40810,7 +40808,7 @@ var DisplacementFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.DisplacementFilter = DisplacementFilter;
-//# sourceMappingURL=filter-displacement.js.map
+
 });
 
 unwrapExports(filterDisplacement);
@@ -40852,7 +40850,7 @@ var FXAAFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.FXAAFilter = FXAAFilter;
-//# sourceMappingURL=filter-fxaa.js.map
+
 });
 
 unwrapExports(filterFxaa);
@@ -40936,7 +40934,7 @@ var NoiseFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.NoiseFilter = NoiseFilter;
-//# sourceMappingURL=filter-noise.js.map
+
 });
 
 unwrapExports(filterNoise);
@@ -42204,7 +42202,7 @@ exports.Mesh = Mesh;
 exports.MeshBatchUvs = MeshBatchUvs;
 exports.MeshGeometry = MeshGeometry;
 exports.MeshMaterial = MeshMaterial;
-//# sourceMappingURL=mesh.js.map
+
 });
 
 unwrapExports(mesh);
@@ -43026,7 +43024,7 @@ exports.RopeGeometry = RopeGeometry;
 exports.SimpleMesh = SimpleMesh;
 exports.SimplePlane = SimplePlane;
 exports.SimpleRope = SimpleRope;
-//# sourceMappingURL=mesh-extras.js.map
+
 });
 
 unwrapExports(meshExtras);
@@ -43490,7 +43488,7 @@ var AnimatedSprite = /*@__PURE__*/(function (Sprite) {
  */
 
 exports.AnimatedSprite = AnimatedSprite;
-//# sourceMappingURL=sprite-animated.js.map
+
 });
 
 unwrapExports(spriteAnimated);
@@ -43518,7 +43516,6 @@ loaders_2.registerPlugin(spritesheet_2);
 
 app_1.registerPlugin(ticker_3);
 app_1.registerPlugin(loaders_1);
-//# sourceMappingURL=pixi.es.js.map
 
 var stats_min = createCommonjsModule(function (module, exports) {
 // stats.js - http://github.com/mrdoob/stats.js
@@ -43593,7 +43590,6 @@ var textStyle = new text_4({
     wordWrap: true,
     wordWrapWidth: 440
 });
-//# sourceMappingURL=util.js.map
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -43725,6 +43721,12 @@ var Boid = (function (_super) {
         this.drawFilledArc(COLORS.COHESION, 0.05, visionAngle, this.options.cohesionRadius, this.debugVision);
         this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
         this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
+        this.debugVision.lineStyle(1, COLORS.COHESION, 0.3);
+        this.debugVision.moveTo(0, -100).lineTo(0, 0);
+        this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
+        this.debugVision.moveTo(0, 0).lineTo(100, 0);
+        this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);
+        this.debugVision.moveTo(-100, 0).lineTo(0, 0);
         this.debugInfo = new text_2("", textStyle);
         this.debugInfo.name = "debugInfo";
         this.debugInfo.zIndex = 9;
@@ -43734,7 +43736,6 @@ var Boid = (function (_super) {
     };
     return Boid;
 }(sprite_1));
-//# sourceMappingURL=boid.js.map
 
 var Renderer = (function () {
     function Renderer(options) {
@@ -43744,9 +43745,8 @@ var Renderer = (function () {
         this.heatmapCells = [];
         this.heatmapHistory = [];
         this.heatmapMax = 10;
-        this.paused = false;
         this.reset = function () {
-            _this.paused = true;
+            _this.stop();
             _this.boidContainer.removeChildren();
             _this.boids = [];
             _this.initBoidTexture();
@@ -43760,11 +43760,14 @@ var Renderer = (function () {
                 _this.updateHeatmapCell(boid.x, boid.y);
             }
             setTimeout(function () {
-                _this.paused = false;
+                _this.start();
             }, 100);
         };
         this.togglePause = function () {
-            _this.paused = !_this.paused;
+            _this.app.ticker.started ? _this.stop() : _this.start();
+        };
+        this.updateSettings = function () {
+            _this.app.ticker.speed = _this.options.speed;
         };
         this.app = new app_1({
             resizeTo: window,
@@ -43787,6 +43790,7 @@ var Renderer = (function () {
         }
         this.app.stage.addChild(this.boidContainer);
         this.reset();
+        this.updateSettings();
         document
             .getElementById(this.options.containerId)
             .appendChild(this.app.view);
@@ -43795,17 +43799,18 @@ var Renderer = (function () {
                 _this.togglePause();
             }
         };
-    }
-    Renderer.prototype.start = function () {
-        var _this = this;
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
-            if (!_this.paused) {
-                _this.cooldownHeatmap();
-                _this.updateBoids(delta);
-            }
+            _this.cooldownHeatmap();
+            _this.updateBoids(delta);
             _this.stats.end();
         });
+    }
+    Renderer.prototype.start = function () {
+        this.app.ticker.start();
+    };
+    Renderer.prototype.stop = function () {
+        this.app.ticker.stop();
     };
     Renderer.prototype.updateBoids = function (delta) {
         var maxX = this.app.screen.width;
@@ -43813,10 +43818,11 @@ var Renderer = (function () {
         var totalBoids = this.boids.length;
         for (var i = 0; i < totalBoids; i++) {
             var boid = this.boids[i];
-            var f_cohesion = 0;
-            var f_separation = 0;
-            var f_alignment = 0;
-            var f_predators = 0;
+            var f_cohesion = boid.desiredVector.rotation;
+            var f_separation = boid.desiredVector.rotation;
+            var f_alignment = boid.desiredVector.rotation;
+            var f_predators = boid.desiredVector.rotation;
+            var f_obstacles = boid.desiredVector.rotation;
             var cohesionNeighbours = [];
             var separationNeighbours = [];
             var alignmentNeighbours = [];
@@ -43873,16 +43879,16 @@ var Renderer = (function () {
                 boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
                 f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI - boid.desiredVector.rotation;
             }
-            boid.desiredVector.rotation += f_predators;
+            boid.desiredVector.rotation = f_predators;
             if (boid.desiredVector.rotation > 2.5 * Math.PI) {
                 var wraps = boid.desiredVector.rotation % (2 * Math.PI);
                 boid.desiredVector.rotation -= wraps * 2 * Math.PI;
             }
             boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
-            var dx = Math.sin(boid.rotation) * this.options.speed;
-            var dy = Math.cos(boid.rotation) * this.options.speed;
-            boid.x -= dx * delta;
-            boid.y += dy * delta;
+            var dx = Math.sin(boid.rotation) * delta;
+            var dy = Math.cos(boid.rotation) * delta;
+            boid.x -= dx;
+            boid.y += dy;
             this.updateHeatmapCell(boid.x, boid.y);
             if (boid.x <= 0) {
                 boid.x = maxX - 1;
@@ -43980,7 +43986,6 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
-//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46475,22 +46480,21 @@ function updateDisplays(controllerArray) {
   });
 }
 var GUI$1 = GUI;
-//# sourceMappingURL=dat.gui.module.js.map
 
-function setupGui(options, reset, togglePause) {
+function setupGui(options, renderer) {
     var gui = new GUI$1({
         name: "Setings",
-        closed: true
+        closed: false,
     });
     var core = gui.addFolder("Core");
     core.open();
-    core.add(options, "boidLength", 1, 50, 1).onFinishChange(function () { reset(); });
-    core.add(options, "boidHeight", 1, 50, 1).onFinishChange(function () { reset(); });
-    core.add(options, "number", 1, 1000, 1).onFinishChange(function () { reset(); });
-    core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(function () { reset(); });
+    core.add(options, "boidLength", 1, 50, 1).onFinishChange(function () { renderer.reset(); });
+    core.add(options, "boidHeight", 1, 50, 1).onFinishChange(function () { renderer.reset(); });
+    core.add(options, "number", 1, 1000, 1).onFinishChange(function () { renderer.reset(); });
+    core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(function () { renderer.reset(); });
     var general = gui.addFolder("General");
     general.open();
-    general.add(options, "speed", 0, 25, 1);
+    general.add(options, "speed", 0, 25, 1).onChange(function () { renderer.updateSettings(); });
     general.add(options, "turningSpeed", 1, 500, 1);
     general.add(options, "visionAngle", 0, 180, 1);
     var heatmap = gui.addFolder("Heatmap");
@@ -46512,13 +46516,13 @@ function setupGui(options, reset, togglePause) {
     forces.add(options, "obstacleForce", 0, 100, 1);
     var methods = {
         togglePause: function () {
-            togglePause();
+            renderer.togglePause();
         }
     };
     gui.add(methods, "togglePause");
+    gui.hide();
     return gui;
 }
-//# sourceMappingURL=gui.js.map
 
 var urlParams = new URLSearchParams(window.location.search);
 var debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ? true : false;
@@ -46548,6 +46552,6 @@ var options = {
     obstacleForce: 5,
 };
 var renderer = new Renderer(options);
-setupGui(options, renderer.reset, renderer.togglePause);
+setupGui(options, renderer);
 renderer.start();
 //# sourceMappingURL=bundle.js.map

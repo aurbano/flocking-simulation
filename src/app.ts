@@ -41,8 +41,7 @@ const renderer = new Renderer(options);
 
 setupGui(
   options,
-  renderer.reset,
-  renderer.togglePause
+  renderer
 );
 
 renderer.start();
