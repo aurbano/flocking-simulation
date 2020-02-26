@@ -2,14 +2,19 @@ import { Options } from './model/types';
 import { Renderer } from './lib/render';
 import { setupGui } from './lib/gui';
 
+const urlParams = new URLSearchParams(window.location.search);
+const debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ? true : false;
+
+console.log('debug', urlParams.get('debug'));
+
 const options: Options = {
   containerId: 'flock',
   boidLength: 5,
   boidHeight: 10,
-  number: 500,
+  number: debug ? 5 : 100,
   heatmapGridSize: 10,
   background: 0x111111,
-  debug: false,
+  debug: debug,
 
   heatmap: false,
   heatmapIncrease: 1,

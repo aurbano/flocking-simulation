@@ -43980,6 +43980,7 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
+//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46519,14 +46520,17 @@ function setupGui(options, reset, togglePause) {
 }
 //# sourceMappingURL=gui.js.map
 
+var urlParams = new URLSearchParams(window.location.search);
+var debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ? true : false;
+console.log('debug', urlParams.get('debug'));
 var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: 500,
+    number: debug ? 5 : 100,
     heatmapGridSize: 10,
     background: 0x111111,
-    debug: false,
+    debug: debug,
     heatmap: false,
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
@@ -46546,5 +46550,4 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options, renderer.reset, renderer.togglePause);
 renderer.start();
-//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map
