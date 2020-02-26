@@ -175,7 +175,6 @@ export class Renderer {
       // const enemiesNear = [];
 
       boid.resetDebug();
-      boid.debugLog(`[${i}]`);
 
       // Iterate over the rest of the boids to find neighbours
       for (let a = 0; a < totalBoids; a++) {
@@ -247,13 +246,14 @@ export class Renderer {
         const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
         boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
 
-        f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI;
+        f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI - boid.desiredVector.rotation;
       }
 
       // TODO: Figure out how to calculate the new desired rotation combining all the forces
-      boid.desiredVector.rotation = f_predators;
+      boid.desiredVector.rotation += f_predators;
 
-      if (boid.desiredVector.rotation > 2 * Math.PI) {
+      // unwrap the desired vector
+      if (boid.desiredVector.rotation > 2.5 * Math.PI) {
         const wraps = boid.desiredVector.rotation % (2 * Math.PI);
         boid.desiredVector.rotation -= wraps * 2 * Math.PI;
       }

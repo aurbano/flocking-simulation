@@ -95,7 +95,7 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.name = "debugNeighbours";
 
     // draw desired direction vector
-    this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
+    this.drawDebugVector(this.desiredVector.rotation - this.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
     this.debugLog(`current: ${Util.printAngle(this.rotation)}`);
     this.debugLog(`desired: ${Util.printAngle(this.desiredVector.rotation)}`);
 
@@ -118,7 +118,7 @@ export class Boid extends PIXI.Sprite {
       this.debugVision.lineStyle(0);
       this.drawFilledArc(
         COLORS.SEPARATION,
-        0.3,
+        0.2,
         visionAngle,
         this.options.separationRadius,
         this.debugVision
@@ -126,7 +126,7 @@ export class Boid extends PIXI.Sprite {
 
       this.drawFilledArc(
         COLORS.ALIGNMENT,
-        0.2,
+        0.15,
         visionAngle,
         this.options.alignmentRadius,
         this.debugVision
@@ -134,7 +134,7 @@ export class Boid extends PIXI.Sprite {
 
       this.drawFilledArc(
         COLORS.COHESION,
-        0.25,
+        0.05,
         visionAngle,
         this.options.cohesionRadius,
         this.debugVision

@@ -19,15 +19,15 @@ const options: Options = {
   turningSpeed: 100,
   visionAngle: 35,
 
-  cohesionRadius: 500,
-  alignmentRadius: 60,
-  separationRadius: 20,
-  predatorRadius: 400,
+  cohesionRadius: 400,
+  alignmentRadius: 0,
+  separationRadius: 0,
+  predatorRadius: 0,
 
-  cohesionForce: 40,
+  cohesionForce: 0,
   separationForce: 0,
   alignmentForce: 0,
-  predatorForce: 10,
+  predatorForce: 0,
   obstacleForce: 0,
 };
 

@@ -43587,7 +43587,7 @@ var COLORS = {
     NONE: 0x999999
 };
 var textStyle = new text_4({
-    fontFamily: "Arial",
+    fontFamily: "monospace",
     fontSize: 14,
     fill: "#cccccc",
     wordWrap: true,
@@ -43683,7 +43683,7 @@ var Boid = (function (_super) {
         this.removeChild(this.debugNeighbours);
         this.debugNeighbours = new graphics_3();
         this.debugNeighbours.name = "debugNeighbours";
-        this.drawDebugVector(this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
+        this.drawDebugVector(this.desiredVector.rotation - this.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
         this.debugLog("current: " + Util.printAngle(this.rotation));
         this.debugLog("desired: " + Util.printAngle(this.desiredVector.rotation));
         this.addChild(this.debugNeighbours);
@@ -43697,9 +43697,9 @@ var Boid = (function (_super) {
             this.debugVision = new graphics_3();
             this.debugVision.name = "debugVision";
             this.debugVision.lineStyle(0);
-            this.drawFilledArc(COLORS.SEPARATION, 0.3, visionAngle, this.options.separationRadius, this.debugVision);
-            this.drawFilledArc(COLORS.ALIGNMENT, 0.2, visionAngle, this.options.alignmentRadius, this.debugVision);
-            this.drawFilledArc(COLORS.COHESION, 0.25, visionAngle, this.options.cohesionRadius, this.debugVision);
+            this.drawFilledArc(COLORS.SEPARATION, 0.2, visionAngle, this.options.separationRadius, this.debugVision);
+            this.drawFilledArc(COLORS.ALIGNMENT, 0.15, visionAngle, this.options.alignmentRadius, this.debugVision);
+            this.drawFilledArc(COLORS.COHESION, 0.05, visionAngle, this.options.cohesionRadius, this.debugVision);
             this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
             this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
             this.debugInfo = new text_2("", textStyle);
@@ -43721,7 +43721,6 @@ var Boid = (function (_super) {
     };
     return Boid;
 }(sprite_1));
-//# sourceMappingURL=boid.js.map
 
 var Renderer = (function () {
     function Renderer(options) {
@@ -43840,7 +43839,6 @@ var Renderer = (function () {
             var separationNeighbours = [];
             var alignmentNeighbours = [];
             boid.resetDebug();
-            boid.debugLog("[" + i + "]");
             for (var a = 0; a < totalBoids; a++) {
                 if (a === i) {
                     continue;
@@ -43891,10 +43889,10 @@ var Renderer = (function () {
                 boid.tint = COLORS.SEPARATION;
                 var localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
                 boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
-                f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI;
+                f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI - boid.desiredVector.rotation;
             }
-            boid.desiredVector.rotation = f_predators;
-            if (boid.desiredVector.rotation > 2 * Math.PI) {
+            boid.desiredVector.rotation += f_predators;
+            if (boid.desiredVector.rotation > 2.5 * Math.PI) {
                 var wraps = boid.desiredVector.rotation % (2 * Math.PI);
                 boid.desiredVector.rotation -= wraps * 2 * Math.PI;
             }
@@ -43951,6 +43949,7 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
+//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46498,14 +46497,14 @@ var options = {
     speed: 1,
     turningSpeed: 100,
     visionAngle: 35,
-    cohesionRadius: 500,
-    alignmentRadius: 60,
-    separationRadius: 20,
-    predatorRadius: 400,
-    cohesionForce: 40,
+    cohesionRadius: 400,
+    alignmentRadius: 0,
+    separationRadius: 0,
+    predatorRadius: 0,
+    cohesionForce: 0,
     separationForce: 0,
     alignmentForce: 0,
-    predatorForce: 10,
+    predatorForce: 0,
     obstacleForce: 0,
 };
 var renderer = new Renderer(options);

@@ -91,7 +91,7 @@ export const COLORS = {
 };
 
 export const textStyle = new PIXI.TextStyle({
-  fontFamily: "Arial",
+  fontFamily: "monospace",
   fontSize: 14,
   fill: "#cccccc",
   wordWrap: true,
