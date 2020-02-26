@@ -44,42 +44,9 @@ export class Renderer {
       this.boidContainer = new PIXI.Container();
     }
 
-    const maxX = this.app.screen.width;
-    const maxY = this.app.screen.height;
-    const gridItems =
-      (maxX / this.options.heatmapGridSize) *
-      (maxY / this.options.heatmapGridSize);
-
-    this.heatmapContainer = new PIXI.ParticleContainer(gridItems, {
-      position: false,
-      rotation: false,
-      tint: true
-    });
-    this.app.stage.addChild(this.heatmapContainer);
     this.app.stage.addChild(this.boidContainer);
 
-    // Prepare the boid texture for sprites
-    const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xcccccc);
-    graphics.lineStyle(0);
-    graphics.drawPolygon([
-      new PIXI.Point(this.options.boidLength / 2, this.options.boidHeight),
-      new PIXI.Point(0, 0),
-      new PIXI.Point(this.options.boidLength, 0)
-    ]);
-    graphics.endFill();
-
-    let region = new PIXI.Rectangle(0, 0, options.boidLength, options.boidHeight);
-    this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
-    this.boidTexture.defaultAnchor.set(0.5, 0.5);
-
-    // Prepare the grid texture
-    graphics.beginFill(0xffffff);
-    graphics.lineStyle(0);
-    graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
-    graphics.endFill();
-    region = new PIXI.Rectangle(0, 0, options.heatmapGridSize, options.heatmapGridSize);
-    this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+    this.reset();
 
     // Render the app
     document
@@ -95,47 +62,6 @@ export class Renderer {
   }
 
   public start() {
-    const maxX = this.app.screen.width;
-    const maxY = this.app.screen.height;
-
-    // Initialize heatmap grid
-    if (this.options.heatmap) {
-      for (
-        let gridX = 0;
-        gridX < maxX / this.options.heatmapGridSize;
-        gridX++
-      ) {
-        this.heatmapCells[gridX] = [];
-        this.heatmapHistory[gridX] = [];
-
-        for (
-          let gridY = 0;
-          gridY < maxY / this.options.heatmapGridSize;
-          gridY++
-        ) {
-          const gridCell = new PIXI.Sprite(this.heatmapTexture);
-          gridCell.x = gridX * this.options.heatmapGridSize;
-          gridCell.y = gridY * this.options.heatmapGridSize;
-          gridCell.tint = this.options.background;
-
-          this.heatmapCells[gridX][gridY] = gridCell;
-          this.heatmapHistory[gridX][gridY] = 0;
-
-          this.heatmapContainer.addChild(gridCell);
-        }
-      }
-    }
-
-    // Initialize boids
-    for (let i = 0; i < this.options.number; i++) {
-      const boid = new Boid(this.options, maxX, maxY, this.boidTexture);
-
-      this.boidContainer.addChild(boid);
-      this.boids.push(boid);
-
-      this.updateHeatmapCell(boid.x, boid.y);
-    }
-
     // Listen for animate update
     this.app.ticker.add(delta => {
       this.stats.begin();
@@ -147,6 +73,34 @@ export class Renderer {
 
       this.stats.end();
     });
+  }
+
+  public reset = () => {
+    this.paused = true;
+
+    this.boidContainer.removeChildren();
+    this.boids = [];
+
+    this.initBoidTexture();
+    this.initHeatmap();
+
+    const maxX = this.app.screen.width;
+    const maxY = this.app.screen.height;
+
+    // Initialize boids
+    for (let i = 0; i < this.options.number; i++) {
+      const boid = new Boid(this.options, maxX, maxY, this.boidTexture);
+
+      this.boidContainer.addChild(boid);
+      this.boids.push(boid);
+
+      this.updateHeatmapCell(boid.x, boid.y);
+    }
+
+    // Make sure everything is ready to render again
+    setTimeout(() => {
+      this.paused = false;
+    }, 100);
   }
 
   public togglePause = () => {
@@ -283,6 +237,78 @@ export class Renderer {
         boid.y = 1;
       }
     }
+  }
+
+  private initBoidTexture() {
+    // Prepare the boid texture for sprites
+    const graphics = new PIXI.Graphics();
+    graphics.beginFill(0xcccccc);
+    graphics.lineStyle(0);
+    graphics.drawPolygon([
+      new PIXI.Point(this.options.boidLength / 2, this.options.boidHeight),
+      new PIXI.Point(0, 0),
+      new PIXI.Point(this.options.boidLength, 0)
+    ]);
+    graphics.endFill();
+
+    let region = new PIXI.Rectangle(0, 0, this.options.boidLength, this.options.boidHeight);
+    this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+    this.boidTexture.defaultAnchor.set(0.5, 0.5);
+  }
+
+  private initHeatmap() {
+    const maxX = this.app.screen.width;
+    const maxY = this.app.screen.height;
+    const heatmapItems =
+      (maxX / this.options.heatmapGridSize) *
+      (maxY / this.options.heatmapGridSize);
+
+    this.heatmapContainer = new PIXI.ParticleContainer(heatmapItems, {
+      position: false,
+      rotation: false,
+      tint: true
+    });
+
+    // Prepare the heatmap texture
+    const graphics = new PIXI.Graphics();
+    graphics.beginFill(0xffffff);
+    graphics.lineStyle(0);
+    graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
+    graphics.endFill();
+
+    const region = new PIXI.Rectangle(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
+    this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+
+    if (this.options.heatmap) {
+      this.heatmapContainer.removeChildren();
+
+      for (
+        let gridX = 0;
+        gridX < maxX / this.options.heatmapGridSize;
+        gridX++
+      ) {
+        this.heatmapCells[gridX] = [];
+        this.heatmapHistory[gridX] = [];
+
+        for (
+          let gridY = 0;
+          gridY < maxY / this.options.heatmapGridSize;
+          gridY++
+        ) {
+          const gridCell = new PIXI.Sprite(this.heatmapTexture);
+          gridCell.x = gridX * this.options.heatmapGridSize;
+          gridCell.y = gridY * this.options.heatmapGridSize;
+          gridCell.tint = this.options.background;
+
+          this.heatmapCells[gridX][gridY] = gridCell;
+          this.heatmapHistory[gridX][gridY] = 0;
+
+          this.heatmapContainer.addChild(gridCell);
+        }
+      }
+    }
+
+    this.app.stage.addChild(this.heatmapContainer);
   }
 
   private updateHeatmapCell(boidX: number, boidY: number) {

@@ -1,11 +1,18 @@
 import * as dat from "dat.gui";
 import { Options } from "../model/types";
 
-export function setupGui(options: Options, togglePause: Function) {
+export function setupGui(options: Options, reset: Function, togglePause: Function) {
   const gui = new dat.GUI({
     name: "Setings",
     closed: true
   });
+
+  const core = gui.addFolder("Core");
+  core.open();
+  core.add(options, "boidLength", 1, 50, 1).onFinishChange(() => { reset(); });
+  core.add(options, "boidHeight", 1, 50, 1).onFinishChange(() => { reset(); });
+  core.add(options, "number", 1, 1000, 1).onFinishChange(() => { reset(); });
+  core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(() => { reset(); });
 
   const general = gui.addFolder("General");
   general.open();

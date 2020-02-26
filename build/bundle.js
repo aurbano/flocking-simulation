@@ -43667,17 +43667,26 @@ var Boid = (function (_super) {
     Boid.prototype.drawDebugLine = function (x, y, color, alpha, thickness) {
         if (alpha === void 0) { alpha = 1; }
         if (thickness === void 0) { thickness = 1; }
+        if (!this.options.debug) {
+            return;
+        }
         this.debugNeighbours.lineStyle(thickness, color, alpha);
         this.debugNeighbours.moveTo(0, 0).lineTo(x, y);
     };
     Boid.prototype.drawDebugVector = function (rotation, magnitude, color, alpha, thickness) {
         if (alpha === void 0) { alpha = 1; }
         if (thickness === void 0) { thickness = 1; }
-        var vecX = Math.sin(rotation) * this.desiredVector.magnitude * magnitude;
-        var vecY = Math.cos(rotation) * this.desiredVector.magnitude * magnitude;
+        if (!this.options.debug) {
+            return;
+        }
+        var vecX = Math.sin(rotation) * magnitude;
+        var vecY = Math.cos(rotation) * magnitude;
         this.drawDebugLine(vecX, vecY, color, alpha, thickness);
     };
     Boid.prototype.resetDebug = function () {
+        if (!this.options.debug) {
+            return;
+        }
         this.debugInfo.text = '';
         this.debugInfo.rotation = -this.rotation;
         this.removeChild(this.debugNeighbours);
@@ -43689,26 +43698,10 @@ var Boid = (function (_super) {
         this.addChild(this.debugNeighbours);
     };
     Boid.prototype.debugLog = function (msg) {
-        this.debugInfo.text += msg + '\n';
-    };
-    Boid.prototype.initDebug = function () {
-        if (this.options.debug) {
-            var visionAngle = (this.options.visionAngle * Math.PI) / 180;
-            this.debugVision = new graphics_3();
-            this.debugVision.name = "debugVision";
-            this.debugVision.lineStyle(0);
-            this.drawFilledArc(COLORS.SEPARATION, 0.2, visionAngle, this.options.separationRadius, this.debugVision);
-            this.drawFilledArc(COLORS.ALIGNMENT, 0.15, visionAngle, this.options.alignmentRadius, this.debugVision);
-            this.drawFilledArc(COLORS.COHESION, 0.05, visionAngle, this.options.cohesionRadius, this.debugVision);
-            this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
-            this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
-            this.debugInfo = new text_2("", textStyle);
-            this.debugInfo.name = "debugInfo";
-            this.debugInfo.zIndex = 9;
-            this.debugNeighbours = new graphics_3();
-            this.debugNeighbours.name = "debugNeighbours";
-            this.addChild(this.debugVision, this.debugNeighbours, this.debugInfo);
+        if (!this.options.debug) {
+            return;
         }
+        this.debugInfo.text += msg + '\n';
     };
     Boid.prototype.drawFilledArc = function (color, alpha, angle, radius, graphics) {
         graphics.beginFill(color, 0.1);
@@ -43719,8 +43712,29 @@ var Boid = (function (_super) {
             .arc(0, 0, radius, Math.PI / 2 - angle, Math.PI / 2);
         graphics.endFill();
     };
+    Boid.prototype.initDebug = function () {
+        if (!this.options.debug) {
+            return;
+        }
+        var visionAngle = (this.options.visionAngle * Math.PI) / 180;
+        this.debugVision = new graphics_3();
+        this.debugVision.name = "debugVision";
+        this.debugVision.lineStyle(0);
+        this.drawFilledArc(COLORS.SEPARATION, 0.2, visionAngle, this.options.separationRadius, this.debugVision);
+        this.drawFilledArc(COLORS.ALIGNMENT, 0.15, visionAngle, this.options.alignmentRadius, this.debugVision);
+        this.drawFilledArc(COLORS.COHESION, 0.05, visionAngle, this.options.cohesionRadius, this.debugVision);
+        this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
+        this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
+        this.debugInfo = new text_2("", textStyle);
+        this.debugInfo.name = "debugInfo";
+        this.debugInfo.zIndex = 9;
+        this.debugNeighbours = new graphics_3();
+        this.debugNeighbours.name = "debugNeighbours";
+        this.addChild(this.debugVision, this.debugNeighbours, this.debugInfo);
+    };
     return Boid;
 }(sprite_1));
+//# sourceMappingURL=boid.js.map
 
 var Renderer = (function () {
     function Renderer(options) {
@@ -43731,6 +43745,24 @@ var Renderer = (function () {
         this.heatmapHistory = [];
         this.heatmapMax = 10;
         this.paused = false;
+        this.reset = function () {
+            _this.paused = true;
+            _this.boidContainer.removeChildren();
+            _this.boids = [];
+            _this.initBoidTexture();
+            _this.initHeatmap();
+            var maxX = _this.app.screen.width;
+            var maxY = _this.app.screen.height;
+            for (var i = 0; i < _this.options.number; i++) {
+                var boid = new Boid(_this.options, maxX, maxY, _this.boidTexture);
+                _this.boidContainer.addChild(boid);
+                _this.boids.push(boid);
+                _this.updateHeatmapCell(boid.x, boid.y);
+            }
+            setTimeout(function () {
+                _this.paused = false;
+            }, 100);
+        };
         this.togglePause = function () {
             _this.paused = !_this.paused;
         };
@@ -43753,35 +43785,8 @@ var Renderer = (function () {
         else {
             this.boidContainer = new display_2();
         }
-        var maxX = this.app.screen.width;
-        var maxY = this.app.screen.height;
-        var gridItems = (maxX / this.options.heatmapGridSize) *
-            (maxY / this.options.heatmapGridSize);
-        this.heatmapContainer = new particles_1(gridItems, {
-            position: false,
-            rotation: false,
-            tint: true
-        });
-        this.app.stage.addChild(this.heatmapContainer);
         this.app.stage.addChild(this.boidContainer);
-        var graphics = new graphics_3();
-        graphics.beginFill(0xcccccc);
-        graphics.lineStyle(0);
-        graphics.drawPolygon([
-            new math_8(this.options.boidLength / 2, this.options.boidHeight),
-            new math_8(0, 0),
-            new math_8(this.options.boidLength, 0)
-        ]);
-        graphics.endFill();
-        var region = new math_11(0, 0, options.boidLength, options.boidHeight);
-        this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
-        this.boidTexture.defaultAnchor.set(0.5, 0.5);
-        graphics.beginFill(0xffffff);
-        graphics.lineStyle(0);
-        graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
-        graphics.endFill();
-        region = new math_11(0, 0, options.heatmapGridSize, options.heatmapGridSize);
-        this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+        this.reset();
         document
             .getElementById(this.options.containerId)
             .appendChild(this.app.view);
@@ -43793,29 +43798,6 @@ var Renderer = (function () {
     }
     Renderer.prototype.start = function () {
         var _this = this;
-        var maxX = this.app.screen.width;
-        var maxY = this.app.screen.height;
-        if (this.options.heatmap) {
-            for (var gridX = 0; gridX < maxX / this.options.heatmapGridSize; gridX++) {
-                this.heatmapCells[gridX] = [];
-                this.heatmapHistory[gridX] = [];
-                for (var gridY = 0; gridY < maxY / this.options.heatmapGridSize; gridY++) {
-                    var gridCell = new sprite_1(this.heatmapTexture);
-                    gridCell.x = gridX * this.options.heatmapGridSize;
-                    gridCell.y = gridY * this.options.heatmapGridSize;
-                    gridCell.tint = this.options.background;
-                    this.heatmapCells[gridX][gridY] = gridCell;
-                    this.heatmapHistory[gridX][gridY] = 0;
-                    this.heatmapContainer.addChild(gridCell);
-                }
-            }
-        }
-        for (var i = 0; i < this.options.number; i++) {
-            var boid = new Boid(this.options, maxX, maxY, this.boidTexture);
-            this.boidContainer.addChild(boid);
-            this.boids.push(boid);
-            this.updateHeatmapCell(boid.x, boid.y);
-        }
         this.app.ticker.add(function (delta) {
             _this.stats.begin();
             if (!_this.paused) {
@@ -43916,6 +43898,55 @@ var Renderer = (function () {
             }
         }
     };
+    Renderer.prototype.initBoidTexture = function () {
+        var graphics = new graphics_3();
+        graphics.beginFill(0xcccccc);
+        graphics.lineStyle(0);
+        graphics.drawPolygon([
+            new math_8(this.options.boidLength / 2, this.options.boidHeight),
+            new math_8(0, 0),
+            new math_8(this.options.boidLength, 0)
+        ]);
+        graphics.endFill();
+        var region = new math_11(0, 0, this.options.boidLength, this.options.boidHeight);
+        this.boidTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+        this.boidTexture.defaultAnchor.set(0.5, 0.5);
+    };
+    Renderer.prototype.initHeatmap = function () {
+        var maxX = this.app.screen.width;
+        var maxY = this.app.screen.height;
+        var heatmapItems = (maxX / this.options.heatmapGridSize) *
+            (maxY / this.options.heatmapGridSize);
+        this.heatmapContainer = new particles_1(heatmapItems, {
+            position: false,
+            rotation: false,
+            tint: true
+        });
+        var graphics = new graphics_3();
+        graphics.beginFill(0xffffff);
+        graphics.lineStyle(0);
+        graphics.drawRect(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
+        graphics.endFill();
+        var region = new math_11(0, 0, this.options.heatmapGridSize, this.options.heatmapGridSize);
+        this.heatmapTexture = this.app.renderer.generateTexture(graphics, 1, 1, region);
+        if (this.options.heatmap) {
+            this.heatmapContainer.removeChildren();
+            for (var gridX = 0; gridX < maxX / this.options.heatmapGridSize; gridX++) {
+                this.heatmapCells[gridX] = [];
+                this.heatmapHistory[gridX] = [];
+                for (var gridY = 0; gridY < maxY / this.options.heatmapGridSize; gridY++) {
+                    var gridCell = new sprite_1(this.heatmapTexture);
+                    gridCell.x = gridX * this.options.heatmapGridSize;
+                    gridCell.y = gridY * this.options.heatmapGridSize;
+                    gridCell.tint = this.options.background;
+                    this.heatmapCells[gridX][gridY] = gridCell;
+                    this.heatmapHistory[gridX][gridY] = 0;
+                    this.heatmapContainer.addChild(gridCell);
+                }
+            }
+        }
+        this.app.stage.addChild(this.heatmapContainer);
+    };
     Renderer.prototype.updateHeatmapCell = function (boidX, boidY) {
         if (!this.options.heatmap) {
             return;
@@ -43949,7 +43980,6 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
-//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46446,11 +46476,17 @@ function updateDisplays(controllerArray) {
 var GUI$1 = GUI;
 //# sourceMappingURL=dat.gui.module.js.map
 
-function setupGui(options, togglePause) {
+function setupGui(options, reset, togglePause) {
     var gui = new GUI$1({
         name: "Setings",
         closed: true
     });
+    var core = gui.addFolder("Core");
+    core.open();
+    core.add(options, "boidLength", 1, 50, 1).onFinishChange(function () { reset(); });
+    core.add(options, "boidHeight", 1, 50, 1).onFinishChange(function () { reset(); });
+    core.add(options, "number", 1, 1000, 1).onFinishChange(function () { reset(); });
+    core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(function () { reset(); });
     var general = gui.addFolder("General");
     general.open();
     general.add(options, "speed", 0, 25, 1);
@@ -46487,10 +46523,10 @@ var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: 3,
+    number: 500,
     heatmapGridSize: 10,
     background: 0x111111,
-    debug: true,
+    debug: false,
     heatmap: false,
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
@@ -46500,15 +46536,15 @@ var options = {
     cohesionRadius: 400,
     alignmentRadius: 0,
     separationRadius: 0,
-    predatorRadius: 0,
+    predatorRadius: 200,
     cohesionForce: 0,
     separationForce: 0,
     alignmentForce: 0,
     predatorForce: 0,
-    obstacleForce: 0,
+    obstacleForce: 5,
 };
 var renderer = new Renderer(options);
-setupGui(options, renderer.togglePause);
+setupGui(options, renderer.reset, renderer.togglePause);
 renderer.start();
 //# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map
