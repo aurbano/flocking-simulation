@@ -42,9 +42,11 @@ export class Renderer {
       this.boidContainer = new PIXI.Container();
     }
 
+    this.reset();
+
+    this.boidContainer.zIndex = 2;
     this.app.stage.addChild(this.boidContainer);
 
-    this.reset();
     this.updateSettings();
 
     // Render the app
@@ -143,19 +145,15 @@ export class Renderer {
           continue;
         }
         const neighbour = this.boids[a];
-        const visible = boid.isNeighbourVisible(neighbour);
+        const neighbourCoords = boid.getNeighbourCoords(neighbour);
+        const neighbourInfo = boid.getPointInfo(neighbourCoords.x, neighbourCoords.y);
 
-        if (!visible) {
+        if (!neighbourInfo.isVisible) {
           continue;
         }
 
-        const neighbourCoords = boid.getNeighbourCoords(neighbour);
         const distance = Util.distance(boid, neighbour);
-
-        if (this.options.debug) {
-          const neighbourAngle = boid.getAngleToNeighbour(neighbour);
-          boid.drawDebugVector(Math.PI / 2 - neighbourAngle, distance, COLORS.VISIBLE, 0.2);
-        }
+        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, 0.2);
 
         if (distance < this.options.separationRadius) {
           separationNeighbours.push(neighbour);
@@ -198,29 +196,27 @@ export class Renderer {
         boid.tint = COLORS.NONE;
       }
 
-      // set the mouse as an enemy
+      // set the mouse as a predator
       const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
       const mouseDistance = Util.distance(mouseCoords, boid);
-
       if (mouseDistance < this.options.predatorRadius) {
         boid.tint = COLORS.SEPARATION;
         const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
 
-        f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI - boid.desiredVector.rotation;
+        const alpha = mouseDistance > 0 ? 1 - mouseDistance / this.options.predatorRadius : 0;
+        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, alpha, 2);
+
+        f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
       }
 
       // TODO: Figure out how to calculate the new desired rotation combining all the forces
       boid.desiredVector.rotation = f_predators;
 
       // unwrap the desired vector
-      if (boid.desiredVector.rotation > 2.5 * Math.PI) {
-        const wraps = boid.desiredVector.rotation % (2 * Math.PI);
-        boid.desiredVector.rotation -= wraps * 2 * Math.PI;
-      }
+      boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
 
       // TODO: update direction via the closest way to get there
-      boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
+      // boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
 
       // Now use the angle and the speed to calculate dx and dy
       const dx = Math.sin(boid.rotation) * delta;
@@ -275,6 +271,8 @@ export class Renderer {
       rotation: false,
       tint: true
     });
+    this.heatmapContainer.zIndex = 1;
+    this.heatmapContainer.visible = false;
 
     // Prepare the heatmap texture
     const graphics = new PIXI.Graphics();

@@ -49,15 +49,6 @@ export class Boid extends PIXI.Sprite {
     return this.toLocal(new PIXI.Point(0, 0), neighbour);
   }
 
-  /**
-   * Angle from this boid's positive X axis to a neighbour
-   * @param neighbour 
-   */
-  public getAngleToNeighbour(neighbour: Boid) {
-    const coords = this.getNeighbourCoords(neighbour);
-    return this.getAngleToPoint(coords.x, coords.y);
-  }
-
   public getAngleToPoint(x: number, y: number) {
     const angle = Math.atan(y / x);
     if (x < 0) {
@@ -66,19 +57,25 @@ export class Boid extends PIXI.Sprite {
     return angle;
   }
 
-  public isNeighbourVisible(neighbour: Boid) {
+  public getPointInfo(x: number, y: number) {
     const visionAngle = (this.options.visionAngle * Math.PI) / 180;
+    const angle = this.getAngleToPoint(x, y);
 
-    let neighbourAngleFromY = this.getAngleToNeighbour(neighbour) - Math.PI / 2;
+    let neighbourAngleFromY = angle - Math.PI / 2;
 
     if (neighbourAngleFromY < 0) {
       neighbourAngleFromY += 2 * Math.PI;
     }
 
-    return (
+    const isVisible = (
       neighbourAngleFromY < visionAngle ||
       neighbourAngleFromY > 2 * Math.PI - visionAngle
     );
+
+    return {
+      isVisible,
+      angle,
+    };
   }
 
   public drawDebugLine(x: number, y:number, color: number, alpha: number = 1, thickness: number = 1) {
@@ -89,6 +86,9 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.moveTo(0, 0).lineTo(x, y);
   }
 
+  /**
+   * Draws a line at the given rotation from the boid's y+ axis
+   */
   public drawDebugVector(rotation: number, magnitude: number, color: number, alpha: number = 1, thickness: number = 1) {
     if (!this.options.debug) {
       return;
@@ -111,7 +111,7 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.name = "debugNeighbours";
 
     // draw desired direction vector
-    this.drawDebugVector(this.desiredVector.rotation - this.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
+    this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
     this.debugLog(`current: ${Util.printAngle(this.rotation)}`);
     this.debugLog(`desired: ${Util.printAngle(this.desiredVector.rotation)}`);
 
@@ -126,7 +126,7 @@ export class Boid extends PIXI.Sprite {
   }
 
   private drawFilledArc(color: number, alpha: number, angle: number, radius: number, graphics: PIXI.Graphics) {
-    graphics.beginFill(color, 0.1);
+    graphics.beginFill(color, alpha);
     graphics
       .moveTo(0, 0)
       .arc(
@@ -176,7 +176,7 @@ export class Boid extends PIXI.Sprite {
 
     this.drawFilledArc(
       COLORS.COHESION,
-      0.05,
+      0.02,
       visionAngle,
       this.options.cohesionRadius,
       this.debugVision

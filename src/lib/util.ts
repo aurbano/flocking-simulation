@@ -79,6 +79,17 @@ export class Util {
 
     return Util.rgbToDecimal(r, g, b);
   }
+
+  /**
+   * Unwrap an angle
+   */
+  public static unwrap(angle: number, mod: number = 2 * Math.PI) {
+    if (angle > 0 && angle < mod) {
+      return angle;
+    }
+    const wraps = Math.floor(angle / mod);
+    return angle - wraps * mod;
+  }
 }
 
 export const COLORS = {

@@ -688,6 +688,7 @@ function isMobile(userAgent) {
         result.apple.tablet || result.android.tablet || result.windows.tablet;
     return result;
 }
+//# sourceMappingURL=isMobile.js.map
 
 var settings_1 = createCommonjsModule(function (module, exports) {
 
@@ -1007,7 +1008,7 @@ var settings = {
 
 exports.isMobile = isMobile$1;
 exports.settings = settings;
-
+//# sourceMappingURL=settings.js.map
 });
 
 unwrapExports(settings_1);
@@ -3533,7 +3534,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     MASK_TYPES[MASK_TYPES["STENCIL"] = 2] = "STENCIL";
     MASK_TYPES[MASK_TYPES["SPRITE"] = 3] = "SPRITE";
 })(exports.MASK_TYPES || (exports.MASK_TYPES = {}));
-
+//# sourceMappingURL=constants.js.map
 });
 
 unwrapExports(constants);
@@ -4479,7 +4480,7 @@ exports.skipHello = skipHello;
 exports.string2hex = string2hex;
 exports.trimCanvas = trimCanvas;
 exports.uid = uid;
-
+//# sourceMappingURL=utils.js.map
 });
 
 unwrapExports(utils);
@@ -6440,7 +6441,7 @@ exports.Rectangle = Rectangle;
 exports.RoundedRectangle = RoundedRectangle;
 exports.Transform = Transform;
 exports.groupD8 = groupD8;
-
+//# sourceMappingURL=math.js.map
 });
 
 unwrapExports(math);
@@ -8363,7 +8364,7 @@ Container.prototype.containerUpdateTransform = Container.prototype.updateTransfo
 exports.Bounds = Bounds;
 exports.Container = Container;
 exports.DisplayObject = DisplayObject;
-
+//# sourceMappingURL=display.js.map
 });
 
 unwrapExports(display);
@@ -9066,7 +9067,7 @@ AccessibilityManager.prototype.destroy = function destroy ()
 
 exports.AccessibilityManager = AccessibilityManager;
 exports.accessibleTarget = accessibleTarget;
-
+//# sourceMappingURL=accessibility.js.map
 });
 
 unwrapExports(accessibility);
@@ -9914,7 +9915,7 @@ var TickerPlugin = /** @class */ (function () {
 
 exports.Ticker = Ticker;
 exports.TickerPlugin = TickerPlugin;
-
+//# sourceMappingURL=ticker.js.map
 });
 
 unwrapExports(ticker);
@@ -12525,7 +12526,7 @@ exports.InteractionEvent = InteractionEvent;
 exports.InteractionManager = InteractionManager;
 exports.InteractionTrackingData = InteractionTrackingData;
 exports.interactiveTarget = interactiveTarget;
-
+//# sourceMappingURL=interaction.js.map
 });
 
 unwrapExports(interaction);
@@ -12729,7 +12730,7 @@ Object.defineProperties(Runner.prototype, {
 });
 
 exports.Runner = Runner;
-
+//# sourceMappingURL=runner.js.map
 });
 
 unwrapExports(runner);
@@ -25834,7 +25835,7 @@ exports.defaultFilterVertex = defaultFilter;
 exports.defaultVertex = _default;
 exports.resources = index;
 exports.systems = systems;
-
+//# sourceMappingURL=core.js.map
 });
 
 unwrapExports(core);
@@ -26105,7 +26106,7 @@ ResizePlugin.destroy = function destroy ()
 Application.registerPlugin(ResizePlugin);
 
 exports.Application = Application;
-
+//# sourceMappingURL=app.js.map
 });
 
 unwrapExports(app);
@@ -26396,7 +26397,7 @@ Extract.arrayPostDivide = function arrayPostDivide (pixels, out)
 };
 
 exports.Extract = Extract;
-
+//# sourceMappingURL=extract.js.map
 });
 
 unwrapExports(extract);
@@ -28931,6 +28932,7 @@ Loader.use = function LoaderUseStatic(fn) {
 
   return Loader;
 };
+//# sourceMappingURL=resource-loader.esm.js.map
 
 var resourceLoader_esm = /*#__PURE__*/Object.freeze({
 	__proto__: null,
@@ -29246,7 +29248,7 @@ exports.AppLoaderPlugin = AppLoaderPlugin;
 exports.Loader = Loader;
 exports.LoaderResource = LoaderResource;
 exports.TextureLoader = TextureLoader;
-
+//# sourceMappingURL=loaders.js.map
 });
 
 unwrapExports(loaders);
@@ -30236,7 +30238,7 @@ var ParticleRenderer = /*@__PURE__*/(function (ObjectRenderer) {
 
 exports.ParticleContainer = ParticleContainer;
 exports.ParticleRenderer = ParticleRenderer;
-
+//# sourceMappingURL=particles.js.map
 });
 
 unwrapExports(particles);
@@ -34057,7 +34059,7 @@ exports.GraphicsData = GraphicsData;
 exports.GraphicsGeometry = GraphicsGeometry;
 exports.LineStyle = LineStyle;
 exports.graphicsUtils = index;
-
+//# sourceMappingURL=graphics.js.map
 });
 
 unwrapExports(graphics);
@@ -34750,7 +34752,7 @@ var Sprite = /*@__PURE__*/(function (Container) {
 }(display.Container));
 
 exports.Sprite = Sprite;
-
+//# sourceMappingURL=sprite.js.map
 });
 
 unwrapExports(sprite);
@@ -37062,7 +37064,7 @@ exports.TEXT_GRADIENT = TEXT_GRADIENT;
 exports.Text = Text;
 exports.TextMetrics = TextMetrics;
 exports.TextStyle = TextStyle;
-
+//# sourceMappingURL=text.js.map
 });
 
 unwrapExports(text);
@@ -37804,7 +37806,7 @@ exports.BasePrepare = BasePrepare;
 exports.CountLimiter = CountLimiter;
 exports.Prepare = Prepare;
 exports.TimeLimiter = TimeLimiter;
-
+//# sourceMappingURL=prepare.js.map
 });
 
 unwrapExports(prepare);
@@ -38224,7 +38226,7 @@ SpritesheetLoader.getResourcePath = function getResourcePath (resource, baseUrl)
 
 exports.Spritesheet = Spritesheet;
 exports.SpritesheetLoader = SpritesheetLoader;
-
+//# sourceMappingURL=spritesheet.js.map
 });
 
 unwrapExports(spritesheet);
@@ -38740,7 +38742,7 @@ var TilingSpriteRenderer = /*@__PURE__*/(function (ObjectRenderer) {
 
 exports.TilingSprite = TilingSprite;
 exports.TilingSpriteRenderer = TilingSpriteRenderer;
-
+//# sourceMappingURL=sprite-tiling.js.map
 });
 
 unwrapExports(spriteTiling);
@@ -39579,7 +39581,7 @@ BitmapFontLoader.use = function use (resource, next)
 
 exports.BitmapFontLoader = BitmapFontLoader;
 exports.BitmapText = BitmapText;
-
+//# sourceMappingURL=text-bitmap.js.map
 });
 
 unwrapExports(textBitmap);
@@ -39649,7 +39651,7 @@ var AlphaFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.AlphaFilter = AlphaFilter;
-
+//# sourceMappingURL=filter-alpha.js.map
 });
 
 unwrapExports(filterAlpha);
@@ -40081,7 +40083,7 @@ var BlurFilter = /*@__PURE__*/(function (Filter) {
 
 exports.BlurFilter = BlurFilter;
 exports.BlurFilterPass = BlurFilterPass;
-
+//# sourceMappingURL=filter-blur.js.map
 });
 
 unwrapExports(filterBlur);
@@ -40685,7 +40687,7 @@ var ColorMatrixFilter = /*@__PURE__*/(function (Filter) {
 ColorMatrixFilter.prototype.grayscale = ColorMatrixFilter.prototype.greyscale;
 
 exports.ColorMatrixFilter = ColorMatrixFilter;
-
+//# sourceMappingURL=filter-color-matrix.js.map
 });
 
 unwrapExports(filterColorMatrix);
@@ -40808,7 +40810,7 @@ var DisplacementFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.DisplacementFilter = DisplacementFilter;
-
+//# sourceMappingURL=filter-displacement.js.map
 });
 
 unwrapExports(filterDisplacement);
@@ -40850,7 +40852,7 @@ var FXAAFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.FXAAFilter = FXAAFilter;
-
+//# sourceMappingURL=filter-fxaa.js.map
 });
 
 unwrapExports(filterFxaa);
@@ -40934,7 +40936,7 @@ var NoiseFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.NoiseFilter = NoiseFilter;
-
+//# sourceMappingURL=filter-noise.js.map
 });
 
 unwrapExports(filterNoise);
@@ -42202,7 +42204,7 @@ exports.Mesh = Mesh;
 exports.MeshBatchUvs = MeshBatchUvs;
 exports.MeshGeometry = MeshGeometry;
 exports.MeshMaterial = MeshMaterial;
-
+//# sourceMappingURL=mesh.js.map
 });
 
 unwrapExports(mesh);
@@ -43024,7 +43026,7 @@ exports.RopeGeometry = RopeGeometry;
 exports.SimpleMesh = SimpleMesh;
 exports.SimplePlane = SimplePlane;
 exports.SimpleRope = SimpleRope;
-
+//# sourceMappingURL=mesh-extras.js.map
 });
 
 unwrapExports(meshExtras);
@@ -43488,7 +43490,7 @@ var AnimatedSprite = /*@__PURE__*/(function (Sprite) {
  */
 
 exports.AnimatedSprite = AnimatedSprite;
-
+//# sourceMappingURL=sprite-animated.js.map
 });
 
 unwrapExports(spriteAnimated);
@@ -43516,6 +43518,7 @@ loaders_2.registerPlugin(spritesheet_2);
 
 app_1.registerPlugin(ticker_3);
 app_1.registerPlugin(loaders_1);
+//# sourceMappingURL=pixi.es.js.map
 
 var stats_min = createCommonjsModule(function (module, exports) {
 // stats.js - http://github.com/mrdoob/stats.js
@@ -43572,6 +43575,14 @@ var Util = (function () {
         var b = Math.round(255 *
             (Math.sin(2 * Math.PI * value) >= 0 ? Math.sin(2 * Math.PI * value) : 0));
         return Util.rgbToDecimal(r, g, b);
+    };
+    Util.unwrap = function (angle, mod) {
+        if (mod === void 0) { mod = 2 * Math.PI; }
+        if (angle > 0 && angle < mod) {
+            return angle;
+        }
+        var wraps = Math.floor(angle / mod);
+        return angle - wraps * mod;
     };
     return Util;
 }());
@@ -43640,10 +43651,6 @@ var Boid = (function (_super) {
     Boid.prototype.getNeighbourCoords = function (neighbour) {
         return this.toLocal(new math_8(0, 0), neighbour);
     };
-    Boid.prototype.getAngleToNeighbour = function (neighbour) {
-        var coords = this.getNeighbourCoords(neighbour);
-        return this.getAngleToPoint(coords.x, coords.y);
-    };
     Boid.prototype.getAngleToPoint = function (x, y) {
         var angle = Math.atan(y / x);
         if (x < 0) {
@@ -43651,14 +43658,19 @@ var Boid = (function (_super) {
         }
         return angle;
     };
-    Boid.prototype.isNeighbourVisible = function (neighbour) {
+    Boid.prototype.getPointInfo = function (x, y) {
         var visionAngle = (this.options.visionAngle * Math.PI) / 180;
-        var neighbourAngleFromY = this.getAngleToNeighbour(neighbour) - Math.PI / 2;
+        var angle = this.getAngleToPoint(x, y);
+        var neighbourAngleFromY = angle - Math.PI / 2;
         if (neighbourAngleFromY < 0) {
             neighbourAngleFromY += 2 * Math.PI;
         }
-        return (neighbourAngleFromY < visionAngle ||
+        var isVisible = (neighbourAngleFromY < visionAngle ||
             neighbourAngleFromY > 2 * Math.PI - visionAngle);
+        return {
+            isVisible: isVisible,
+            angle: angle,
+        };
     };
     Boid.prototype.drawDebugLine = function (x, y, color, alpha, thickness) {
         if (alpha === void 0) { alpha = 1; }
@@ -43688,7 +43700,7 @@ var Boid = (function (_super) {
         this.removeChild(this.debugNeighbours);
         this.debugNeighbours = new graphics_3();
         this.debugNeighbours.name = "debugNeighbours";
-        this.drawDebugVector(this.desiredVector.rotation - this.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
+        this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
         this.debugLog("current: " + Util.printAngle(this.rotation));
         this.debugLog("desired: " + Util.printAngle(this.desiredVector.rotation));
         this.addChild(this.debugNeighbours);
@@ -43700,7 +43712,7 @@ var Boid = (function (_super) {
         this.debugInfo.text += msg + '\n';
     };
     Boid.prototype.drawFilledArc = function (color, alpha, angle, radius, graphics) {
-        graphics.beginFill(color, 0.1);
+        graphics.beginFill(color, alpha);
         graphics
             .moveTo(0, 0)
             .arc(0, 0, radius, Math.PI / 2, angle + Math.PI / 2)
@@ -43718,7 +43730,7 @@ var Boid = (function (_super) {
         this.debugVision.lineStyle(0);
         this.drawFilledArc(COLORS.SEPARATION, 0.2, visionAngle, this.options.separationRadius, this.debugVision);
         this.drawFilledArc(COLORS.ALIGNMENT, 0.15, visionAngle, this.options.alignmentRadius, this.debugVision);
-        this.drawFilledArc(COLORS.COHESION, 0.05, visionAngle, this.options.cohesionRadius, this.debugVision);
+        this.drawFilledArc(COLORS.COHESION, 0.02, visionAngle, this.options.cohesionRadius, this.debugVision);
         this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
         this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
         this.debugVision.lineStyle(1, COLORS.COHESION, 0.3);
@@ -43736,6 +43748,7 @@ var Boid = (function (_super) {
     };
     return Boid;
 }(sprite_1));
+//# sourceMappingURL=boid.js.map
 
 var Renderer = (function () {
     function Renderer(options) {
@@ -43788,8 +43801,9 @@ var Renderer = (function () {
         else {
             this.boidContainer = new display_2();
         }
-        this.app.stage.addChild(this.boidContainer);
         this.reset();
+        this.boidContainer.zIndex = 2;
+        this.app.stage.addChild(this.boidContainer);
         this.updateSettings();
         document
             .getElementById(this.options.containerId)
@@ -43832,16 +43846,13 @@ var Renderer = (function () {
                     continue;
                 }
                 var neighbour = this.boids[a];
-                var visible = boid.isNeighbourVisible(neighbour);
-                if (!visible) {
+                var neighbourCoords = boid.getNeighbourCoords(neighbour);
+                var neighbourInfo = boid.getPointInfo(neighbourCoords.x, neighbourCoords.y);
+                if (!neighbourInfo.isVisible) {
                     continue;
                 }
-                var neighbourCoords = boid.getNeighbourCoords(neighbour);
                 var distance = Util.distance(boid, neighbour);
-                if (this.options.debug) {
-                    var neighbourAngle = boid.getAngleToNeighbour(neighbour);
-                    boid.drawDebugVector(Math.PI / 2 - neighbourAngle, distance, COLORS.VISIBLE, 0.2);
-                }
+                boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, 0.2);
                 if (distance < this.options.separationRadius) {
                     separationNeighbours.push(neighbour);
                     boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
@@ -43876,15 +43887,12 @@ var Renderer = (function () {
             if (mouseDistance < this.options.predatorRadius) {
                 boid.tint = COLORS.SEPARATION;
                 var localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-                boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, 1, 2);
-                f_predators = Math.PI / 2 - boid.getAngleToPoint(localMouseCoords.x, localMouseCoords.y) + Math.PI - boid.desiredVector.rotation;
+                var alpha = mouseDistance > 0 ? 1 - mouseDistance / this.options.predatorRadius : 0;
+                boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, alpha, 2);
+                f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
             }
             boid.desiredVector.rotation = f_predators;
-            if (boid.desiredVector.rotation > 2.5 * Math.PI) {
-                var wraps = boid.desiredVector.rotation % (2 * Math.PI);
-                boid.desiredVector.rotation -= wraps * 2 * Math.PI;
-            }
-            boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
+            boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
             var dx = Math.sin(boid.rotation) * delta;
             var dy = Math.cos(boid.rotation) * delta;
             boid.x -= dx;
@@ -43928,6 +43936,8 @@ var Renderer = (function () {
             rotation: false,
             tint: true
         });
+        this.heatmapContainer.zIndex = 1;
+        this.heatmapContainer.visible = false;
         var graphics = new graphics_3();
         graphics.beginFill(0xffffff);
         graphics.lineStyle(0);
@@ -43986,6 +43996,7 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
+//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46480,6 +46491,7 @@ function updateDisplays(controllerArray) {
   });
 }
 var GUI$1 = GUI;
+//# sourceMappingURL=dat.gui.module.js.map
 
 function setupGui(options, renderer) {
     var gui = new GUI$1({
@@ -46523,28 +46535,29 @@ function setupGui(options, renderer) {
     gui.hide();
     return gui;
 }
+//# sourceMappingURL=gui.js.map
 
 var urlParams = new URLSearchParams(window.location.search);
 var debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ? true : false;
-console.log('debug', urlParams.get('debug'));
+var heatmap = urlParams.get('heatmap') === '' || urlParams.get('heatmap') === 'true' ? true : false;
 var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: debug ? 5 : 100,
+    number: debug ? 5 : 700,
     heatmapGridSize: 10,
     background: 0x111111,
     debug: debug,
-    heatmap: false,
+    heatmap: heatmap,
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
     speed: 1,
     turningSpeed: 100,
     visionAngle: 35,
     cohesionRadius: 400,
-    alignmentRadius: 0,
-    separationRadius: 0,
-    predatorRadius: 200,
+    alignmentRadius: 100,
+    separationRadius: 30,
+    predatorRadius: 400,
     cohesionForce: 0,
     separationForce: 0,
     alignmentForce: 0,
@@ -46554,4 +46567,5 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options, renderer);
 renderer.start();
+//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map
