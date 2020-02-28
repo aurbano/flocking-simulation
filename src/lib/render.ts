@@ -119,7 +119,10 @@ export class Renderer {
   private updateBoids(delta: number) {
     const maxX = this.app.screen.width;
     const maxY = this.app.screen.height;
+    const maxD = Math.max(maxX, maxY);
     const totalBoids = this.boids.length;
+
+    const MIN_TURN_THRESHOLD = 2 * Math.PI / 200;
 
     for (let i = 0; i < totalBoids; i++) {
       const boid = this.boids[i];
@@ -153,21 +156,17 @@ export class Renderer {
         }
 
         const distance = Util.distance(boid, neighbour);
-        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, 0.2);
+        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
 
         if (distance < this.options.separationRadius) {
           separationNeighbours.push(neighbour);
-          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
-        }
-
-        if (distance < this.options.alignmentRadius) {
+          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, Util.fade(distance, this.options.separationRadius) * 0.5);
+        } else if (distance < this.options.alignmentRadius) {
           alignmentNeighbours.push(neighbour);
-          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
-        }
-
-        if (distance < this.options.cohesionRadius) {
+          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, Util.fade(distance, this.options.alignmentRadius) * 0.5);
+        } else if (distance < this.options.cohesionRadius) {
           cohesionNeighbours.push(neighbour);
-          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
+          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, Util.fade(distance, this.options.cohesionRadius) * 0.7, 2);
         }
       }
 
@@ -196,27 +195,37 @@ export class Renderer {
         boid.tint = COLORS.NONE;
       }
 
-      // set the mouse as a predator
+      // Set the mouse as a predator
       const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
       const mouseDistance = Util.distance(mouseCoords, boid);
       if (mouseDistance < this.options.predatorRadius) {
         boid.tint = COLORS.SEPARATION;
         const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-
-        const alpha = mouseDistance > 0 ? 1 - mouseDistance / this.options.predatorRadius : 0;
-        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, alpha, 2);
+        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, Util.fade(mouseDistance, this.options.predatorRadius), 2);
 
         f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
       }
 
       // TODO: Figure out how to calculate the new desired rotation combining all the forces
       boid.desiredVector.rotation = f_predators;
-
-      // unwrap the desired vector
       boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
 
-      // TODO: update direction via the closest way to get there
-      // boid.rotation = boid.rotation + (boid.desiredVector.rotation - boid.rotation) * this.options.turningSpeed / 10000;
+      // Calculate the difference between the angles
+      let diff = boid.desiredVector.rotation - boid.rotation;
+      diff = (diff + Math.PI) % (2 * Math.PI) - Math.PI;
+      diff = diff < -Math.PI ? diff + 2 * Math.PI : diff;
+
+      // turning speed --> 1
+      // diff -------- x
+      const absDiff = Math.abs(diff);
+
+      if (absDiff > MIN_TURN_THRESHOLD) {
+        const direction = absDiff / diff;
+        // const turnAmount = this.options.turningSpeed / absDiff;
+        boid.rotation = Util.unwrap(boid.rotation + direction * 0.01 * this.options.turningSpeed);
+      } else {
+        boid.rotation = boid.desiredVector.rotation;
+      }
 
       // Now use the angle and the speed to calculate dx and dy
       const dx = Math.sin(boid.rotation) * delta;

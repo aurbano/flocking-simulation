@@ -11,7 +11,7 @@ const options: Options = {
   containerId: 'flock',
   boidLength: 5,
   boidHeight: 10,
-  number: debug ? 5 : 700,
+  number: debug ? 5 : 300,
   heatmapGridSize: 10,
   background: 0x111111,
   debug: debug,
@@ -20,8 +20,8 @@ const options: Options = {
   heatmapIncrease: 1,
   heatmapAttenuation: 1,
 
-  speed: 1,
-  turningSpeed: 100,
+  speed: 2,
+  turningSpeed: 5,
   visionAngle: 35,
 
   cohesionRadius: 400,

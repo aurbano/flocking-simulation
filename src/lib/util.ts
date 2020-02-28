@@ -80,9 +80,10 @@ export class Util {
     return Util.rgbToDecimal(r, g, b);
   }
 
-  /**
-   * Unwrap an angle
-   */
+  public static fade(distance: number, maxDistance: number) {
+    return distance > 0 ? 1 - distance / maxDistance : 0
+  }
+
   public static unwrap(angle: number, mod: number = 2 * Math.PI) {
     if (angle > 0 && angle < mod) {
       return angle;

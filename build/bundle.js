@@ -43576,6 +43576,9 @@ var Util = (function () {
             (Math.sin(2 * Math.PI * value) >= 0 ? Math.sin(2 * Math.PI * value) : 0));
         return Util.rgbToDecimal(r, g, b);
     };
+    Util.fade = function (distance, maxDistance) {
+        return distance > 0 ? 1 - distance / maxDistance : 0;
+    };
     Util.unwrap = function (angle, mod) {
         if (mod === void 0) { mod = 2 * Math.PI; }
         if (angle > 0 && angle < mod) {
@@ -43601,6 +43604,7 @@ var textStyle = new text_4({
     wordWrap: true,
     wordWrapWidth: 440
 });
+//# sourceMappingURL=util.js.map
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -43731,14 +43735,8 @@ var Boid = (function (_super) {
         this.drawFilledArc(COLORS.SEPARATION, 0.2, visionAngle, this.options.separationRadius, this.debugVision);
         this.drawFilledArc(COLORS.ALIGNMENT, 0.15, visionAngle, this.options.alignmentRadius, this.debugVision);
         this.drawFilledArc(COLORS.COHESION, 0.02, visionAngle, this.options.cohesionRadius, this.debugVision);
-        this.debugVision.lineStyle(1, COLORS.COHESION, 0.1);
+        this.debugVision.lineStyle(1, COLORS.COHESION, 0.02);
         this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
-        this.debugVision.lineStyle(1, COLORS.COHESION, 0.3);
-        this.debugVision.moveTo(0, -100).lineTo(0, 0);
-        this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
-        this.debugVision.moveTo(0, 0).lineTo(100, 0);
-        this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);
-        this.debugVision.moveTo(-100, 0).lineTo(0, 0);
         this.debugInfo = new text_2("", textStyle);
         this.debugInfo.name = "debugInfo";
         this.debugInfo.zIndex = 9;
@@ -43829,7 +43827,9 @@ var Renderer = (function () {
     Renderer.prototype.updateBoids = function (delta) {
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
+        var maxD = Math.max(maxX, maxY);
         var totalBoids = this.boids.length;
+        var MIN_TURN_THRESHOLD = 2 * Math.PI / 200;
         for (var i = 0; i < totalBoids; i++) {
             var boid = this.boids[i];
             var f_cohesion = boid.desiredVector.rotation;
@@ -43852,18 +43852,18 @@ var Renderer = (function () {
                     continue;
                 }
                 var distance = Util.distance(boid, neighbour);
-                boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, 0.2);
+                boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
                 if (distance < this.options.separationRadius) {
                     separationNeighbours.push(neighbour);
-                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, 0.3);
+                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, Util.fade(distance, this.options.separationRadius) * 0.5);
                 }
-                if (distance < this.options.alignmentRadius) {
+                else if (distance < this.options.alignmentRadius) {
                     alignmentNeighbours.push(neighbour);
-                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, 0.3);
+                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, Util.fade(distance, this.options.alignmentRadius) * 0.5);
                 }
-                if (distance < this.options.cohesionRadius) {
+                else if (distance < this.options.cohesionRadius) {
                     cohesionNeighbours.push(neighbour);
-                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, 0.7, 2);
+                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, Util.fade(distance, this.options.cohesionRadius) * 0.7, 2);
                 }
             }
             boid.tint = 0xcccccc;
@@ -43887,12 +43887,22 @@ var Renderer = (function () {
             if (mouseDistance < this.options.predatorRadius) {
                 boid.tint = COLORS.SEPARATION;
                 var localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-                var alpha = mouseDistance > 0 ? 1 - mouseDistance / this.options.predatorRadius : 0;
-                boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, alpha, 2);
+                boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, Util.fade(mouseDistance, this.options.predatorRadius), 2);
                 f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
             }
             boid.desiredVector.rotation = f_predators;
             boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
+            var diff = boid.desiredVector.rotation - boid.rotation;
+            diff = (diff + Math.PI) % (2 * Math.PI) - Math.PI;
+            diff = diff < -Math.PI ? diff + 2 * Math.PI : diff;
+            var absDiff = Math.abs(diff);
+            if (absDiff > MIN_TURN_THRESHOLD) {
+                var direction = absDiff / diff;
+                boid.rotation = Util.unwrap(boid.rotation + direction * 0.01 * this.options.turningSpeed);
+            }
+            else {
+                boid.rotation = boid.desiredVector.rotation;
+            }
             var dx = Math.sin(boid.rotation) * delta;
             var dy = Math.cos(boid.rotation) * delta;
             boid.x -= dx;
@@ -46506,8 +46516,8 @@ function setupGui(options, renderer) {
     core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(function () { renderer.reset(); });
     var general = gui.addFolder("General");
     general.open();
-    general.add(options, "speed", 0, 25, 1).onChange(function () { renderer.updateSettings(); });
-    general.add(options, "turningSpeed", 1, 500, 1);
+    general.add(options, "speed", 0, 10, 0.1).onChange(function () { renderer.updateSettings(); });
+    general.add(options, "turningSpeed", 0, 100, 1);
     general.add(options, "visionAngle", 0, 180, 1);
     var heatmap = gui.addFolder("Heatmap");
     heatmap.open();
@@ -46544,15 +46554,15 @@ var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: debug ? 5 : 700,
+    number: debug ? 5 : 300,
     heatmapGridSize: 10,
     background: 0x111111,
     debug: debug,
     heatmap: heatmap,
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
-    speed: 1,
-    turningSpeed: 100,
+    speed: 2,
+    turningSpeed: 5,
     visionAngle: 35,
     cohesionRadius: 400,
     alignmentRadius: 100,
@@ -46567,5 +46577,4 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options, renderer);
 renderer.start();
-//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map
