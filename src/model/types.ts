@@ -13,7 +13,7 @@ export type Options = {
 
   speed: number,
   turningSpeed: number,
-
+  randomMoveChance: number,
   visionAngle: number,
 
   cohesionRadius: number,

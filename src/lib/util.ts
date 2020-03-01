@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { Boid } from "../model/boid";
 
 type Position = {
   x: number;
@@ -11,18 +12,17 @@ export class Util {
   }
 
   public static getNeighboursRotation(
-    neighbours: Array<PIXI.Sprite>,
-    boid: PIXI.Sprite
+    neighbours: Array<Boid>,
+    boid: Boid
   ) {
     if (neighbours.length < 1) {
       return 0;
     }
-
     // [meanX, meanY] is the center of mass of the neighbours
-    const meanX = Util.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.x);
-    const meanY = Util.arrayMean(neighbours, (boid: PIXI.Sprite) => boid.y);
+    const meanX = Util.arrayMean(neighbours, (boid: Boid) => boid.x);
+    const meanY = Util.arrayMean(neighbours, (boid: Boid) => boid.y);
 
-    return Util.getRotation(meanX, meanY, boid);
+    return Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2);
   }
 
   public static getRotation(meanX: number, meanY: number, boid: PIXI.Sprite) {

@@ -20,6 +20,7 @@ export function setupGui(options: Options, renderer: Renderer) {
   general.add(options, "speed", 0, 10, 0.1).onChange(() => { renderer.updateSettings(); });
   general.add(options, "turningSpeed", 0, 100, 1);
   general.add(options, "visionAngle", 0, 180, 1);
+  general.add(options, "randomMoveChance", 0, 100, 1);
 
   const heatmap = gui.addFolder("Heatmap");
   heatmap.open();

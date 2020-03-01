@@ -11,7 +11,7 @@ const options: Options = {
   containerId: 'flock',
   boidLength: 5,
   boidHeight: 10,
-  number: debug ? 5 : 300,
+  number: debug ? 5 : 150,
   heatmapGridSize: 10,
   background: 0x111111,
   debug: debug,
@@ -20,20 +20,21 @@ const options: Options = {
   heatmapIncrease: 1,
   heatmapAttenuation: 1,
 
-  speed: 2,
-  turningSpeed: 5,
-  visionAngle: 35,
+  speed: 4,
+  turningSpeed: 10,
+  visionAngle: 45,
+  randomMoveChance: 10,
 
   cohesionRadius: 400,
   alignmentRadius: 100,
   separationRadius: 30,
-  predatorRadius: 400,
+  predatorRadius: 0,
 
-  cohesionForce: 0,
-  separationForce: 0,
-  alignmentForce: 0,
-  predatorForce: 0,
-  obstacleForce: 5,
+  cohesionForce: 10,
+  separationForce: 25,
+  alignmentForce: 50,
+  predatorForce: 60,
+  obstacleForce: 20,
 };
 
 // Setup the Renderer

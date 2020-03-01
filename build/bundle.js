@@ -43540,7 +43540,7 @@ var Util = (function () {
         }
         var meanX = Util.arrayMean(neighbours, function (boid) { return boid.x; });
         var meanY = Util.arrayMean(neighbours, function (boid) { return boid.y; });
-        return Util.getRotation(meanX, meanY, boid);
+        return Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2);
     };
     Util.getRotation = function (meanX, meanY, boid) {
         var mean_dx = meanX - boid.x;
@@ -43737,6 +43737,12 @@ var Boid = (function (_super) {
         this.drawFilledArc(COLORS.COHESION, 0.02, visionAngle, this.options.cohesionRadius, this.debugVision);
         this.debugVision.lineStyle(1, COLORS.COHESION, 0.02);
         this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
+        this.debugVision.lineStyle(1, COLORS.COHESION, 0.3);
+        this.debugVision.moveTo(0, -100).lineTo(0, 0);
+        this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
+        this.debugVision.moveTo(0, 0).lineTo(100, 0);
+        this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);
+        this.debugVision.moveTo(-100, 0).lineTo(0, 0);
         this.debugInfo = new text_2("", textStyle);
         this.debugInfo.name = "debugInfo";
         this.debugInfo.zIndex = 9;
@@ -43829,7 +43835,6 @@ var Renderer = (function () {
         var maxY = this.app.screen.height;
         var maxD = Math.max(maxX, maxY);
         var totalBoids = this.boids.length;
-        var MIN_TURN_THRESHOLD = 2 * Math.PI / 200;
         for (var i = 0; i < totalBoids; i++) {
             var boid = this.boids[i];
             var f_cohesion = boid.desiredVector.rotation;
@@ -43867,17 +43872,19 @@ var Renderer = (function () {
                 }
             }
             boid.tint = 0xcccccc;
-            if (separationNeighbours.length > 0) {
-                boid.tint = COLORS.SEPARATION;
-                f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
-            }
-            if (alignmentNeighbours.length > 0) {
-                boid.tint = COLORS.ALIGNMENT;
-                f_alignment = Util.getNeighboursRotation(alignmentNeighbours, boid);
-            }
             if (cohesionNeighbours.length > 0) {
                 boid.tint = COLORS.COHESION;
                 f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
+            }
+            if (alignmentNeighbours.length > 0) {
+                boid.tint = COLORS.ALIGNMENT;
+                var rotations = alignmentNeighbours.map(function (each) { return each.rotation; }).reduce(function (a, b) { return a + b; }, 0);
+                var avg = rotations / alignmentNeighbours.length;
+                f_alignment = avg;
+            }
+            if (separationNeighbours.length > 0) {
+                boid.tint = COLORS.SEPARATION;
+                f_separation = Util.getNeighboursRotation(separationNeighbours, boid) - 3 * Math.PI / 2;
             }
             if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
                 boid.tint = COLORS.NONE;
@@ -43890,18 +43897,27 @@ var Renderer = (function () {
                 boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, Util.fade(mouseDistance, this.options.predatorRadius), 2);
                 f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
             }
-            boid.desiredVector.rotation = f_predators;
+            boid.desiredVector.rotation = (f_cohesion * this.options.cohesionForce +
+                f_separation * this.options.separationForce +
+                f_alignment * this.options.alignmentForce +
+                f_predators * this.options.predatorForce +
+                f_obstacles * this.options.obstacleForce) / (this.options.cohesionForce +
+                this.options.separationForce +
+                this.options.alignmentForce +
+                this.options.predatorForce +
+                this.options.obstacleForce);
+            if (Math.random() * 100 < this.options.randomMoveChance) {
+                boid.desiredVector.rotation += (Math.random() - 0.5) * Math.PI / 20;
+            }
             boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
             var diff = boid.desiredVector.rotation - boid.rotation;
             diff = (diff + Math.PI) % (2 * Math.PI) - Math.PI;
             diff = diff < -Math.PI ? diff + 2 * Math.PI : diff;
             var absDiff = Math.abs(diff);
-            if (absDiff > MIN_TURN_THRESHOLD) {
+            if (absDiff > 0) {
                 var direction = absDiff / diff;
-                boid.rotation = Util.unwrap(boid.rotation + direction * 0.01 * this.options.turningSpeed);
-            }
-            else {
-                boid.rotation = boid.desiredVector.rotation;
+                var turnAmount = Math.min(absDiff, 0.01 * this.options.turningSpeed);
+                boid.rotation = Util.unwrap(boid.rotation + direction * turnAmount);
             }
             var dx = Math.sin(boid.rotation) * delta;
             var dy = Math.cos(boid.rotation) * delta;
@@ -46519,6 +46535,7 @@ function setupGui(options, renderer) {
     general.add(options, "speed", 0, 10, 0.1).onChange(function () { renderer.updateSettings(); });
     general.add(options, "turningSpeed", 0, 100, 1);
     general.add(options, "visionAngle", 0, 180, 1);
+    general.add(options, "randomMoveChance", 0, 100, 1);
     var heatmap = gui.addFolder("Heatmap");
     heatmap.open();
     heatmap.add(options, "heatmapIncrease", 0, 500, 0.1);
@@ -46554,25 +46571,26 @@ var options = {
     containerId: 'flock',
     boidLength: 5,
     boidHeight: 10,
-    number: debug ? 5 : 300,
+    number: debug ? 5 : 150,
     heatmapGridSize: 10,
     background: 0x111111,
     debug: debug,
     heatmap: heatmap,
     heatmapIncrease: 1,
     heatmapAttenuation: 1,
-    speed: 2,
-    turningSpeed: 5,
-    visionAngle: 35,
+    speed: 4,
+    turningSpeed: 10,
+    visionAngle: 45,
+    randomMoveChance: 10,
     cohesionRadius: 400,
     alignmentRadius: 100,
     separationRadius: 30,
-    predatorRadius: 400,
-    cohesionForce: 0,
-    separationForce: 0,
-    alignmentForce: 0,
-    predatorForce: 0,
-    obstacleForce: 5,
+    predatorRadius: 0,
+    cohesionForce: 10,
+    separationForce: 25,
+    alignmentForce: 50,
+    predatorForce: 60,
+    obstacleForce: 20,
 };
 var renderer = new Renderer(options);
 setupGui(options, renderer);

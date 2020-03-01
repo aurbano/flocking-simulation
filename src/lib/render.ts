@@ -122,8 +122,6 @@ export class Renderer {
     const maxD = Math.max(maxX, maxY);
     const totalBoids = this.boids.length;
 
-    const MIN_TURN_THRESHOLD = 2 * Math.PI / 200;
-
     for (let i = 0; i < totalBoids; i++) {
       const boid = this.boids[i];
 
@@ -158,6 +156,7 @@ export class Renderer {
         const distance = Util.distance(boid, neighbour);
         boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
 
+        // TODO Store contributions with distance and deviation from center
         if (distance < this.options.separationRadius) {
           separationNeighbours.push(neighbour);
           boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, Util.fade(distance, this.options.separationRadius) * 0.5);
@@ -172,23 +171,26 @@ export class Renderer {
 
       boid.tint = 0xcccccc;
 
-      // Calculate forces
-      if (separationNeighbours.length > 0) {
-        boid.tint = COLORS.SEPARATION;
-        // separation makes it want to fly away from neighbours
-        f_separation = Util.getNeighboursRotation(separationNeighbours, boid) + Math.PI;
+      if (cohesionNeighbours.length > 0) {
+        boid.tint = COLORS.COHESION;
+        // cohesion makes it want to go towards neighbours
+        f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
       }
 
       if (alignmentNeighbours.length > 0) {
         boid.tint = COLORS.ALIGNMENT;
         // alignment makes it want to fly in the same rotation
-        f_alignment = Util.getNeighboursRotation(alignmentNeighbours, boid);
+        // calculate their average direction
+        const rotations = alignmentNeighbours.map(each => each.rotation).reduce((a, b) => a + b, 0);
+        const avg = rotations / alignmentNeighbours.length;
+        f_alignment = avg;
       }
 
-      if (cohesionNeighbours.length > 0) {
-        boid.tint = COLORS.COHESION;
-        // cohesion makes it want to go towards neighbours
-        f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
+      // Calculate forces
+      if (separationNeighbours.length > 0) {
+        boid.tint = COLORS.SEPARATION;
+        // separation makes it want to fly away from neighbours
+        f_separation = Util.getNeighboursRotation(separationNeighbours, boid) - 3 * Math.PI / 2;
       }
 
       if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
@@ -206,8 +208,22 @@ export class Renderer {
         f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
       }
 
-      // TODO: Figure out how to calculate the new desired rotation combining all the forces
-      boid.desiredVector.rotation = f_predators;
+      boid.desiredVector.rotation = (
+        f_cohesion * this.options.cohesionForce + 
+        f_separation * this.options.separationForce + 
+        f_alignment * this.options.alignmentForce + 
+        f_predators * this.options.predatorForce + 
+        f_obstacles * this.options.obstacleForce) / (
+          this.options.cohesionForce + 
+          this.options.separationForce + 
+          this.options.alignmentForce + 
+          this.options.predatorForce + 
+          this.options.obstacleForce
+        );
+      // bit of random movement
+      if (Math.random() * 100 < this.options.randomMoveChance) {
+        boid.desiredVector.rotation += (Math.random() - 0.5) * Math.PI / 20;
+      }
       boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
 
       // Calculate the difference between the angles
@@ -215,16 +231,11 @@ export class Renderer {
       diff = (diff + Math.PI) % (2 * Math.PI) - Math.PI;
       diff = diff < -Math.PI ? diff + 2 * Math.PI : diff;
 
-      // turning speed --> 1
-      // diff -------- x
       const absDiff = Math.abs(diff);
-
-      if (absDiff > MIN_TURN_THRESHOLD) {
+      if (absDiff > 0) {
         const direction = absDiff / diff;
-        // const turnAmount = this.options.turningSpeed / absDiff;
-        boid.rotation = Util.unwrap(boid.rotation + direction * 0.01 * this.options.turningSpeed);
-      } else {
-        boid.rotation = boid.desiredVector.rotation;
+        const turnAmount = Math.min(absDiff, 0.01 * this.options.turningSpeed);
+        boid.rotation = Util.unwrap(boid.rotation + direction * turnAmount);
       }
 
       // Now use the angle and the speed to calculate dx and dy
