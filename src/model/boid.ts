@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import { Options } from "./types";
-import { COLORS, textStyle, Util } from "../lib/util";
+import { COLORS, textStyle, UI_COLORS, TYPES } from "../lib/constants";
 
 type Vector = {
   rotation: number; // radians
@@ -111,9 +111,7 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.name = "debugNeighbours";
 
     // draw desired direction vector
-    this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
-    this.debugLog(`current: ${Util.printAngle(this.rotation)}`);
-    this.debugLog(`desired: ${Util.printAngle(this.desiredVector.rotation)}`);
+    this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, UI_COLORS.DESIRED);
 
     this.addChild(this.debugNeighbours);
   }
@@ -159,43 +157,43 @@ export class Boid extends PIXI.Sprite {
     // boids vision
     this.debugVision.lineStyle(0);
     this.drawFilledArc(
-      COLORS.SEPARATION,
+      COLORS[TYPES.SEPARATION],
       0.2,
       visionAngle,
-      this.options.separationRadius,
+      this.options.radius[TYPES.SEPARATION],
       this.debugVision
     );
 
     this.drawFilledArc(
-      COLORS.ALIGNMENT,
+      COLORS[TYPES.ALIGNMENT],
       0.15,
       visionAngle,
-      this.options.alignmentRadius,
+      this.options.radius[TYPES.ALIGNMENT],
       this.debugVision
     );
 
     this.drawFilledArc(
-      COLORS.COHESION,
-      0.02,
+      COLORS[TYPES.COHESION],
+      0.1,
       visionAngle,
-      this.options.cohesionRadius,
+      this.options.radius[TYPES.COHESION],
       this.debugVision
     );
 
     // y+
-    this.debugVision.lineStyle(1, COLORS.COHESION, 0.02);
-    this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
+    this.debugVision.lineStyle(1, COLORS[TYPES.COHESION], 0.2);
+    this.debugVision.moveTo(0, 0).lineTo(0, this.options.radius[TYPES.COHESION]);
 
     // y-
-    this.debugVision.lineStyle(1, COLORS.COHESION, 0.3);
-    this.debugVision.moveTo(0, -100).lineTo(0, 0);
+    // this.debugVision.lineStyle(1, COLORS[TYPES.COHESION], 0.3);
+    // this.debugVision.moveTo(0, -100).lineTo(0, 0);
 
-    // x+ axis
-    this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
-    this.debugVision.moveTo(0, 0).lineTo(100, 0);
-    // x- axis
-    this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);
-    this.debugVision.moveTo(-100, 0).lineTo(0, 0);
+    // // x+ axis
+    // this.debugVision.lineStyle(1, UI_COLORS[TYPES.VISIBLE], 0.5);
+    // this.debugVision.moveTo(0, 0).lineTo(100, 0);
+    // // x- axis
+    // this.debugVision.lineStyle(1, COLORS.[TYPES.SEPARATION], 0.5);
+    // this.debugVision.moveTo(-100, 0).lineTo(0, 0);
 
     this.debugInfo = new PIXI.Text("", textStyle);
     this.debugInfo.name = "debugInfo";

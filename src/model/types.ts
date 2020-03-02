@@ -16,14 +16,18 @@ export type Options = {
   randomMoveChance: number,
   visionAngle: number,
 
-  cohesionRadius: number,
-  separationRadius: number,
-  alignmentRadius: number,
-  predatorRadius: number,
+  radius: {
+    [key: string]: number;
+  },
 
-  cohesionForce: number,
-  separationForce: number,
-  alignmentForce: number,
-  predatorForce: number,
-  obstacleForce: number,
+  weight: {
+    [key: string]: number;
+  },
+};
+
+export type Neighbour = {
+  x: number,
+  y: number,
+  distance: number,
+  rotation: number,
 };

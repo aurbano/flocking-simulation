@@ -1,6 +1,7 @@
 import { Options } from './model/types';
 import { Renderer } from './lib/render';
 import { setupGui } from './lib/gui';
+import { TYPES } from './lib/constants';
 
 const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ? true : false;
@@ -13,28 +14,33 @@ const options: Options = {
   boidHeight: 10,
   number: debug ? 5 : 150,
   heatmapGridSize: 10,
-  background: 0x111111,
+  background: null,
   debug: debug,
 
   heatmap: heatmap,
-  heatmapIncrease: 1,
-  heatmapAttenuation: 1,
+  heatmapIncrease: 50,
+  heatmapAttenuation: 100,
 
-  speed: 4,
-  turningSpeed: 10,
+  speed: debug? 2 : 4,
+  turningSpeed: debug ? 2 : 10,
   visionAngle: 45,
   randomMoveChance: 10,
 
-  cohesionRadius: 400,
-  alignmentRadius: 100,
-  separationRadius: 30,
-  predatorRadius: 0,
+  radius: {
+    [TYPES.COHESION]: 400,
+    [TYPES.ALIGNMENT]: 100,
+    [TYPES.SEPARATION]: 30,
+    [TYPES.PREDATORS]: 200,
+    [TYPES.OBSTACLES]: 50,
+  },
 
-  cohesionForce: 10,
-  separationForce: 25,
-  alignmentForce: 50,
-  predatorForce: 60,
-  obstacleForce: 20,
+  weight: {
+    [TYPES.COHESION]: 10,
+    [TYPES.ALIGNMENT]: 25,
+    [TYPES.SEPARATION]: 50,
+    [TYPES.PREDATORS]: 60,
+    [TYPES.OBSTACLES]: 20,
+  },
 };
 
 // Setup the Renderer

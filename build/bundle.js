@@ -43534,7 +43534,7 @@ var Util = (function () {
     Util.random = function (min, max) {
         return min + Math.random() * (max - min);
     };
-    Util.getNeighboursRotation = function (neighbours, boid) {
+    Util.getNeighboursWeightedRotation = function (neighbours, boid) {
         if (neighbours.length < 1) {
             return 0;
         }
@@ -43550,8 +43550,15 @@ var Util = (function () {
     Util.printAngle = function (rad) {
         return Math.round((rad * 180) / Math.PI);
     };
-    Util.distance = function (p1, p2) {
-        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    Util.distance = function (p1, p2, max) {
+        var dx = Math.abs(p1.x - p2.x);
+        var dy = Math.abs(p1.y - p2.y);
+        if (max) {
+            if (dx >= max || dy >= max) {
+                return max;
+            }
+        }
+        return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
     };
     Util.arrayMean = function (arr, getKey) {
         var result = 0;
@@ -43589,22 +43596,36 @@ var Util = (function () {
     };
     return Util;
 }());
-var COLORS = {
-    COHESION: 0xcccccc,
-    ALIGNMENT: 0x9dd60b,
-    SEPARATION: 0xeb0000,
+//# sourceMappingURL=util.js.map
+
+var _a;
+var TYPES = {
+    PREDATORS: 'predators',
+    SEPARATION: 'separation',
+    ALIGNMENT: 'alignment',
+    COHESION: 'cohesion',
+    OBSTACLES: 'obstacles',
+};
+var COLORS = (_a = {},
+    _a[TYPES.COHESION] = 0x666666,
+    _a[TYPES.ALIGNMENT] = 0x509e02,
+    _a[TYPES.SEPARATION] = 0xeb0000,
+    _a[TYPES.PREDATORS] = 0xeb0000,
+    _a[TYPES.OBSTACLES] = 0xeb0000,
+    _a);
+var UI_COLORS = {
     VISIBLE: 0x03b6fc,
     DESIRED: 0xf7b12f,
-    NONE: 0x999999
+    NONE: 0x333333,
 };
 var textStyle = new text_4({
     fontFamily: "monospace",
     fontSize: 14,
-    fill: "#cccccc",
+    fill: "#666666",
     wordWrap: true,
     wordWrapWidth: 440
 });
-//# sourceMappingURL=util.js.map
+//# sourceMappingURL=constants.js.map
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -43704,9 +43725,7 @@ var Boid = (function (_super) {
         this.removeChild(this.debugNeighbours);
         this.debugNeighbours = new graphics_3();
         this.debugNeighbours.name = "debugNeighbours";
-        this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, COLORS.DESIRED);
-        this.debugLog("current: " + Util.printAngle(this.rotation));
-        this.debugLog("desired: " + Util.printAngle(this.desiredVector.rotation));
+        this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, UI_COLORS.DESIRED);
         this.addChild(this.debugNeighbours);
     };
     Boid.prototype.debugLog = function (msg) {
@@ -43732,17 +43751,11 @@ var Boid = (function (_super) {
         this.debugVision = new graphics_3();
         this.debugVision.name = "debugVision";
         this.debugVision.lineStyle(0);
-        this.drawFilledArc(COLORS.SEPARATION, 0.2, visionAngle, this.options.separationRadius, this.debugVision);
-        this.drawFilledArc(COLORS.ALIGNMENT, 0.15, visionAngle, this.options.alignmentRadius, this.debugVision);
-        this.drawFilledArc(COLORS.COHESION, 0.02, visionAngle, this.options.cohesionRadius, this.debugVision);
-        this.debugVision.lineStyle(1, COLORS.COHESION, 0.02);
-        this.debugVision.moveTo(0, 0).lineTo(0, this.options.cohesionRadius);
-        this.debugVision.lineStyle(1, COLORS.COHESION, 0.3);
-        this.debugVision.moveTo(0, -100).lineTo(0, 0);
-        this.debugVision.lineStyle(1, COLORS.VISIBLE, 0.5);
-        this.debugVision.moveTo(0, 0).lineTo(100, 0);
-        this.debugVision.lineStyle(1, COLORS.SEPARATION, 0.5);
-        this.debugVision.moveTo(-100, 0).lineTo(0, 0);
+        this.drawFilledArc(COLORS[TYPES.SEPARATION], 0.2, visionAngle, this.options.radius[TYPES.SEPARATION], this.debugVision);
+        this.drawFilledArc(COLORS[TYPES.ALIGNMENT], 0.15, visionAngle, this.options.radius[TYPES.ALIGNMENT], this.debugVision);
+        this.drawFilledArc(COLORS[TYPES.COHESION], 0.1, visionAngle, this.options.radius[TYPES.COHESION], this.debugVision);
+        this.debugVision.lineStyle(1, COLORS[TYPES.COHESION], 0.2);
+        this.debugVision.moveTo(0, 0).lineTo(0, this.options.radius[TYPES.COHESION]);
         this.debugInfo = new text_2("", textStyle);
         this.debugInfo.name = "debugInfo";
         this.debugInfo.zIndex = 9;
@@ -43790,6 +43803,7 @@ var Renderer = (function () {
             resizeTo: window,
             resolution: devicePixelRatio,
             autoDensity: true,
+            transparent: options.background === null,
             backgroundColor: options.background
         });
         this.stats = new stats_min();
@@ -43831,82 +43845,89 @@ var Renderer = (function () {
         this.app.ticker.stop();
     };
     Renderer.prototype.updateBoids = function (delta) {
+        var _this = this;
         var maxX = this.app.screen.width;
         var maxY = this.app.screen.height;
         var maxD = Math.max(maxX, maxY);
         var totalBoids = this.boids.length;
-        for (var i = 0; i < totalBoids; i++) {
-            var boid = this.boids[i];
-            var f_cohesion = boid.desiredVector.rotation;
-            var f_separation = boid.desiredVector.rotation;
-            var f_alignment = boid.desiredVector.rotation;
-            var f_predators = boid.desiredVector.rotation;
-            var f_obstacles = boid.desiredVector.rotation;
-            var cohesionNeighbours = [];
-            var separationNeighbours = [];
-            var alignmentNeighbours = [];
+        var neighbourTypes = [
+            TYPES.SEPARATION,
+            TYPES.ALIGNMENT,
+            TYPES.COHESION,
+        ];
+        var _loop_1 = function (i) {
+            var boid = this_1.boids[i];
+            boid.tint = UI_COLORS.NONE;
+            var rotations = {};
+            var neighbours = {};
+            Object.values(TYPES).forEach(function (type) {
+                rotations[type] = null;
+                neighbours[type] = [];
+            });
             boid.resetDebug();
             for (var a = 0; a < totalBoids; a++) {
                 if (a === i) {
                     continue;
                 }
-                var neighbour = this.boids[a];
-                var neighbourCoords = boid.getNeighbourCoords(neighbour);
+                var neighbourBoid = this_1.boids[a];
+                var neighbourCoords = boid.getNeighbourCoords(neighbourBoid);
                 var neighbourInfo = boid.getPointInfo(neighbourCoords.x, neighbourCoords.y);
                 if (!neighbourInfo.isVisible) {
                     continue;
                 }
-                var distance = Util.distance(boid, neighbour);
-                boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
-                if (distance < this.options.separationRadius) {
-                    separationNeighbours.push(neighbour);
-                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, Util.fade(distance, this.options.separationRadius) * 0.5);
+                var distance = Util.distance(boid, neighbourBoid, this_1.options.radius[TYPES.COHESION]);
+                if (distance >= this_1.options.radius[TYPES.COHESION]) {
+                    continue;
                 }
-                else if (distance < this.options.alignmentRadius) {
-                    alignmentNeighbours.push(neighbour);
-                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, Util.fade(distance, this.options.alignmentRadius) * 0.5);
+                var neighbour = {
+                    x: neighbourBoid.x,
+                    y: neighbourBoid.y,
+                    distance: distance,
+                    rotation: neighbourBoid.rotation,
+                };
+                boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
+                for (var _i = 0, neighbourTypes_1 = neighbourTypes; _i < neighbourTypes_1.length; _i++) {
+                    var type = neighbourTypes_1[_i];
+                    if (distance < this_1.options.radius[type]) {
+                        neighbours[type].push(neighbour);
+                        boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS[type], Util.fade(distance, this_1.options.radius[type]) * 0.5, 2);
+                    }
                 }
-                else if (distance < this.options.cohesionRadius) {
-                    cohesionNeighbours.push(neighbour);
-                    boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, Util.fade(distance, this.options.cohesionRadius) * 0.7, 2);
+            }
+            if (neighbours[TYPES.COHESION].length > 0) {
+                boid.tint = COLORS[TYPES.COHESION];
+                rotations[TYPES.COHESION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.COHESION], boid);
+            }
+            if (neighbours[TYPES.ALIGNMENT].length > 0) {
+                boid.tint = COLORS[TYPES.ALIGNMENT];
+                var rotations_1 = neighbours[TYPES.ALIGNMENT].map(function (each) { return each.rotation; }).reduce(function (a, b) { return a + b; }, 0);
+                var avg = rotations_1 / neighbours[TYPES.ALIGNMENT].length;
+                rotations_1[TYPES.ALIGNMENT] = avg;
+            }
+            if (neighbours[TYPES.SEPARATION].length > 0) {
+                boid.tint = COLORS[TYPES.SEPARATION];
+                rotations[TYPES.SEPARATION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.SEPARATION], boid) - 3 * Math.PI / 2;
+            }
+            var mouseCoords = this_1.app.renderer.plugins.interaction.mouse.global;
+            var mouseDistance = Util.distance(mouseCoords, boid, this_1.options.radius[TYPES.PREDATORS]);
+            if (mouseDistance < this_1.options.radius[TYPES.PREDATORS]) {
+                boid.tint = COLORS[TYPES.PREDATORS];
+                var localMouseCoords = this_1.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
+                boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this_1.options.radius[TYPES.PREDATORS]), 2);
+                rotations[TYPES.PREDATORS] = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+            }
+            var totalRotation = boid.desiredVector.rotation;
+            var totalWeight = 1;
+            Object.values(TYPES).forEach(function (type) {
+                if (rotations[type] === null) {
+                    return;
                 }
-            }
-            boid.tint = 0xcccccc;
-            if (cohesionNeighbours.length > 0) {
-                boid.tint = COLORS.COHESION;
-                f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
-            }
-            if (alignmentNeighbours.length > 0) {
-                boid.tint = COLORS.ALIGNMENT;
-                var rotations = alignmentNeighbours.map(function (each) { return each.rotation; }).reduce(function (a, b) { return a + b; }, 0);
-                var avg = rotations / alignmentNeighbours.length;
-                f_alignment = avg;
-            }
-            if (separationNeighbours.length > 0) {
-                boid.tint = COLORS.SEPARATION;
-                f_separation = Util.getNeighboursRotation(separationNeighbours, boid) - 3 * Math.PI / 2;
-            }
-            if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
-                boid.tint = COLORS.NONE;
-            }
-            var mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
-            var mouseDistance = Util.distance(mouseCoords, boid);
-            if (mouseDistance < this.options.predatorRadius) {
-                boid.tint = COLORS.SEPARATION;
-                var localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-                boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, Util.fade(mouseDistance, this.options.predatorRadius), 2);
-                f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
-            }
-            boid.desiredVector.rotation = (f_cohesion * this.options.cohesionForce +
-                f_separation * this.options.separationForce +
-                f_alignment * this.options.alignmentForce +
-                f_predators * this.options.predatorForce +
-                f_obstacles * this.options.obstacleForce) / (this.options.cohesionForce +
-                this.options.separationForce +
-                this.options.alignmentForce +
-                this.options.predatorForce +
-                this.options.obstacleForce);
-            if (Math.random() * 100 < this.options.randomMoveChance) {
+                var weight = _this.options.weight[type];
+                totalRotation += weight * rotations[type];
+                totalWeight += weight;
+            });
+            boid.desiredVector.rotation = totalRotation / totalWeight;
+            if (Math.random() * 100 < this_1.options.randomMoveChance) {
                 boid.desiredVector.rotation += (Math.random() - 0.5) * Math.PI / 20;
             }
             boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
@@ -43916,14 +43937,13 @@ var Renderer = (function () {
             var absDiff = Math.abs(diff);
             if (absDiff > 0) {
                 var direction = absDiff / diff;
-                var turnAmount = Math.min(absDiff, 0.01 * this.options.turningSpeed);
+                var turnAmount = Math.min(absDiff, 0.01 * this_1.options.turningSpeed);
                 boid.rotation = Util.unwrap(boid.rotation + direction * turnAmount);
             }
             var dx = Math.sin(boid.rotation) * delta;
             var dy = Math.cos(boid.rotation) * delta;
             boid.x -= dx;
             boid.y += dy;
-            this.updateHeatmapCell(boid.x, boid.y);
             if (boid.x <= 0) {
                 boid.x = maxX - 1;
             }
@@ -43936,12 +43956,20 @@ var Renderer = (function () {
             else if (boid.y >= maxY) {
                 boid.y = 1;
             }
+            this_1.updateHeatmapCell(boid.x, boid.y);
+        };
+        var this_1 = this;
+        for (var i = 0; i < totalBoids; i++) {
+            _loop_1(i);
         }
     };
     Renderer.prototype.initBoidTexture = function () {
         var graphics = new graphics_3();
-        graphics.beginFill(0xcccccc);
+        graphics.beginFill(0xffffff);
         graphics.lineStyle(0);
+        if (this.options.heatmap) {
+            graphics.lineStyle(2, 0xffffff);
+        }
         graphics.drawPolygon([
             new math_8(this.options.boidLength / 2, this.options.boidHeight),
             new math_8(0, 0),
@@ -43963,7 +43991,6 @@ var Renderer = (function () {
             tint: true
         });
         this.heatmapContainer.zIndex = 1;
-        this.heatmapContainer.visible = false;
         var graphics = new graphics_3();
         graphics.beginFill(0xffffff);
         graphics.lineStyle(0);
@@ -44022,7 +44049,6 @@ var Renderer = (function () {
     };
     return Renderer;
 }());
-//# sourceMappingURL=render.js.map
 
 /**
  * dat-gui JavaScript Controller Library
@@ -46542,17 +46568,18 @@ function setupGui(options, renderer) {
     heatmap.add(options, "heatmapAttenuation", 0, 1000, 1);
     var distances = gui.addFolder("Distances");
     distances.open();
-    distances.add(options, "cohesionRadius", 0, 500, 1);
-    distances.add(options, "separationRadius", 0, 500, 1);
-    distances.add(options, "alignmentRadius", 0, 500, 1);
-    distances.add(options, "predatorRadius", 0, 500, 1);
+    distances.add(options.radius, TYPES.COHESION, 0, 500, 1);
+    distances.add(options.radius, TYPES.SEPARATION, 0, 500, 1);
+    distances.add(options.radius, TYPES.ALIGNMENT, 0, 500, 1);
+    distances.add(options.radius, TYPES.PREDATORS, 0, 500, 1);
+    distances.add(options.radius, TYPES.OBSTACLES, 0, 500, 1);
     var forces = gui.addFolder("Forces");
     forces.open();
-    forces.add(options, "cohesionForce", 0, 100, 1);
-    forces.add(options, "separationForce", 0, 100, 1);
-    forces.add(options, "alignmentForce", 0, 100, 1);
-    forces.add(options, "predatorForce", 0, 100, 1);
-    forces.add(options, "obstacleForce", 0, 100, 1);
+    forces.add(options.weight, TYPES.COHESION, 0, 100, 1);
+    forces.add(options.weight, TYPES.SEPARATION, 0, 100, 1);
+    forces.add(options.weight, TYPES.ALIGNMENT, 0, 100, 1);
+    forces.add(options.weight, TYPES.PREDATORS, 0, 100, 1);
+    forces.add(options.weight, TYPES.OBSTACLES, 0, 100, 1);
     var methods = {
         togglePause: function () {
             renderer.togglePause();
@@ -46564,6 +46591,7 @@ function setupGui(options, renderer) {
 }
 //# sourceMappingURL=gui.js.map
 
+var _a$1, _b;
 var urlParams = new URLSearchParams(window.location.search);
 var debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ? true : false;
 var heatmap = urlParams.get('heatmap') === '' || urlParams.get('heatmap') === 'true' ? true : false;
@@ -46573,26 +46601,32 @@ var options = {
     boidHeight: 10,
     number: debug ? 5 : 150,
     heatmapGridSize: 10,
-    background: 0x111111,
+    background: null,
     debug: debug,
     heatmap: heatmap,
-    heatmapIncrease: 1,
-    heatmapAttenuation: 1,
-    speed: 4,
-    turningSpeed: 10,
+    heatmapIncrease: 50,
+    heatmapAttenuation: 100,
+    speed: debug ? 2 : 4,
+    turningSpeed: debug ? 2 : 10,
     visionAngle: 45,
     randomMoveChance: 10,
-    cohesionRadius: 400,
-    alignmentRadius: 100,
-    separationRadius: 30,
-    predatorRadius: 0,
-    cohesionForce: 10,
-    separationForce: 25,
-    alignmentForce: 50,
-    predatorForce: 60,
-    obstacleForce: 20,
+    radius: (_a$1 = {},
+        _a$1[TYPES.COHESION] = 400,
+        _a$1[TYPES.ALIGNMENT] = 100,
+        _a$1[TYPES.SEPARATION] = 30,
+        _a$1[TYPES.PREDATORS] = 200,
+        _a$1[TYPES.OBSTACLES] = 50,
+        _a$1),
+    weight: (_b = {},
+        _b[TYPES.COHESION] = 10,
+        _b[TYPES.ALIGNMENT] = 25,
+        _b[TYPES.SEPARATION] = 50,
+        _b[TYPES.PREDATORS] = 60,
+        _b[TYPES.OBSTACLES] = 20,
+        _b),
 };
 var renderer = new Renderer(options);
 setupGui(options, renderer);
 renderer.start();
+//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

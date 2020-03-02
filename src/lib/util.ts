@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { Boid } from "../model/boid";
+import { Neighbour } from "../model/types";
 
 type Position = {
   x: number;
@@ -11,14 +12,14 @@ export class Util {
     return min + Math.random() * (max - min);
   }
 
-  public static getNeighboursRotation(
-    neighbours: Array<Boid>,
+  public static getNeighboursWeightedRotation(
+    neighbours: Array<Neighbour>,
     boid: Boid
   ) {
     if (neighbours.length < 1) {
       return 0;
     }
-    // [meanX, meanY] is the center of mass of the neighbours
+    // [meanX, meanY] is the weighted center of mass of the neighbours
     const meanX = Util.arrayMean(neighbours, (boid: Boid) => boid.x);
     const meanY = Util.arrayMean(neighbours, (boid: Boid) => boid.y);
 
@@ -38,12 +39,15 @@ export class Util {
     return Math.round((rad * 180) / Math.PI);
   }
 
-  public static distance(p1: Position, p2: Position) {
-    // Approximation by using octagons approach
-    // const dx = Math.abs(p2.x - p1.x);
-    // const dy = Math.abs(p2.y - p1.y);
-    // return 1.426776695 * Math.min(0.7071067812 * (dx + dy), Math.max(dx, dy));
-    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+  public static distance(p1: Position, p2: Position, max?: number) {
+    const dx = Math.abs(p1.x - p2.x);
+    const dy = Math.abs(p1.y - p2.y);
+    if (max) {
+      if (dx >= max || dy >= max) {
+        return max;
+      }
+    }
+    return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
   }
 
   public static arrayMean(arr: Array<any>, getKey: Function) {
@@ -90,22 +94,6 @@ export class Util {
     }
     const wraps = Math.floor(angle / mod);
     return angle - wraps * mod;
-  }
+ 
+ }
 }
-
-export const COLORS = {
-  COHESION: 0xcccccc,
-  ALIGNMENT: 0x9dd60b,
-  SEPARATION: 0xeb0000,
-  VISIBLE: 0x03b6fc,
-  DESIRED: 0xf7b12f,
-  NONE: 0x999999
-};
-
-export const textStyle = new PIXI.TextStyle({
-  fontFamily: "monospace",
-  fontSize: 14,
-  fill: "#cccccc",
-  wordWrap: true,
-  wordWrapWidth: 440
-});

@@ -1,7 +1,8 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: #333;
+  background: #b7eaff;
+  background: linear-gradient(to bottom, #b7eaff 0%,#94dfff 100%);
   color: #efefef;
   text-align: center;
   font-family: Arial, Helvetica, sans-serif;
@@ -32,10 +33,10 @@ footer {
 }
 
 a, a:link, a:focus, a:visited {
-  color: #ccc;
+  color: #025477;
   text-decoration: none;
 }
 
 a:hover {
-  color: #fff;
+  color: #000;
 }

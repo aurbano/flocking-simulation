@@ -1,6 +1,7 @@
 import * as dat from "dat.gui";
 import { Options } from "../model/types";
 import { Renderer } from "./render";
+import { TYPES } from "./constants";
 
 export function setupGui(options: Options, renderer: Renderer) {
   const gui = new dat.GUI({
@@ -29,18 +30,19 @@ export function setupGui(options: Options, renderer: Renderer) {
 
   const distances = gui.addFolder("Distances");
   distances.open();
-  distances.add(options, "cohesionRadius", 0, 500, 1);
-  distances.add(options, "separationRadius", 0, 500, 1);
-  distances.add(options, "alignmentRadius", 0, 500, 1);
-  distances.add(options, "predatorRadius", 0, 500, 1);
+  distances.add(options.radius, TYPES.COHESION, 0, 500, 1);
+  distances.add(options.radius, TYPES.SEPARATION, 0, 500, 1);
+  distances.add(options.radius, TYPES.ALIGNMENT, 0, 500, 1);
+  distances.add(options.radius, TYPES.PREDATORS, 0, 500, 1);
+  distances.add(options.radius, TYPES.OBSTACLES, 0, 500, 1);
 
   const forces = gui.addFolder("Forces");
   forces.open();
-  forces.add(options, "cohesionForce", 0, 100, 1);
-  forces.add(options, "separationForce", 0, 100, 1);
-  forces.add(options, "alignmentForce", 0, 100, 1);
-  forces.add(options, "predatorForce", 0, 100, 1);
-  forces.add(options, "obstacleForce", 0, 100, 1);
+  forces.add(options.weight, TYPES.COHESION, 0, 100, 1);
+  forces.add(options.weight, TYPES.SEPARATION, 0, 100, 1);
+  forces.add(options.weight, TYPES.ALIGNMENT, 0, 100, 1);
+  forces.add(options.weight, TYPES.PREDATORS, 0, 100, 1);
+  forces.add(options.weight, TYPES.OBSTACLES, 0, 100, 1);
 
   const methods = {
     togglePause: () => {

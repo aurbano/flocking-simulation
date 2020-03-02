@@ -1,8 +1,9 @@
 import * as PIXI from "pixi.js";
 import Stats from "stats.js";
 
-import { Options } from "../model/types";
-import { Util, COLORS } from "./util";
+import { Options, Neighbour } from "../model/types";
+import { Util } from "./util";
+import { COLORS, UI_COLORS, TYPES } from "./constants";
 import { Boid } from "../model/boid";
 
 export class Renderer {
@@ -25,6 +26,7 @@ export class Renderer {
       resizeTo: window,
       resolution: devicePixelRatio,
       autoDensity: true,
+      transparent: options.background === null,
       backgroundColor: options.background
     });
 
@@ -122,21 +124,25 @@ export class Renderer {
     const maxD = Math.max(maxX, maxY);
     const totalBoids = this.boids.length;
 
+    // Types for which we care about neighbours
+    const neighbourTypes = [
+      TYPES.SEPARATION,
+      TYPES.ALIGNMENT,
+      TYPES.COHESION,
+    ];
+
     for (let i = 0; i < totalBoids; i++) {
       const boid = this.boids[i];
+      boid.tint = UI_COLORS.NONE;
 
       // Forces that determine flocking
-      let f_cohesion: number = boid.desiredVector.rotation; // steer towards average position of neighbours (long range attraction)
-      let f_separation: number = boid.desiredVector.rotation; // avoid crowding neighbours (short range repulsion)
-      let f_alignment: number = boid.desiredVector.rotation; // steer towards average heading of neighbours
-      let f_predators: number = boid.desiredVector.rotation; // avoid predators
-      let f_obstacles: number = boid.desiredVector.rotation; // avoid obstacles (same as predators but with less margin)
+      const rotations: any = {};
+      const neighbours: any = {};
 
-      // Find important neighbours
-      const cohesionNeighbours: Boid[] = [];
-      const separationNeighbours: Boid[] = [];
-      const alignmentNeighbours: Boid[] = [];
-      // const enemiesNear = [];
+      Object.values(TYPES).forEach(type => {
+        rotations[type] = null;
+        neighbours[type] = [];
+      });
 
       boid.resetDebug();
 
@@ -145,81 +151,82 @@ export class Renderer {
         if (a === i) {
           continue;
         }
-        const neighbour = this.boids[a];
-        const neighbourCoords = boid.getNeighbourCoords(neighbour);
+        const neighbourBoid = this.boids[a];
+        const neighbourCoords = boid.getNeighbourCoords(neighbourBoid);
         const neighbourInfo = boid.getPointInfo(neighbourCoords.x, neighbourCoords.y);
 
         if (!neighbourInfo.isVisible) {
           continue;
         }
 
-        const distance = Util.distance(boid, neighbour);
-        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
+        const distance = Util.distance(boid, neighbourBoid, this.options.radius[TYPES.COHESION]);
+        if (distance >= this.options.radius[TYPES.COHESION]) {
+          continue;
+        }
 
-        // TODO Store contributions with distance and deviation from center
-        if (distance < this.options.separationRadius) {
-          separationNeighbours.push(neighbour);
-          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.SEPARATION, Util.fade(distance, this.options.separationRadius) * 0.5);
-        } else if (distance < this.options.alignmentRadius) {
-          alignmentNeighbours.push(neighbour);
-          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.ALIGNMENT, Util.fade(distance, this.options.alignmentRadius) * 0.5);
-        } else if (distance < this.options.cohesionRadius) {
-          cohesionNeighbours.push(neighbour);
-          boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS.COHESION, Util.fade(distance, this.options.cohesionRadius) * 0.7, 2);
+        const neighbour: Neighbour = {
+          x: neighbourBoid.x,
+          y: neighbourBoid.y,
+          distance,
+          rotation: neighbourBoid.rotation,
+        };
+        
+        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
+
+        for (let type of neighbourTypes) {
+          if (distance < this.options.radius[type]) {
+            neighbours[type].push(neighbour);
+            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS[type], Util.fade(distance, this.options.radius[type]) * 0.5, 2);
+          }
         }
       }
 
-      boid.tint = 0xcccccc;
-
-      if (cohesionNeighbours.length > 0) {
-        boid.tint = COLORS.COHESION;
-        // cohesion makes it want to go towards neighbours
-        f_cohesion = Util.getNeighboursRotation(cohesionNeighbours, boid);
+      // cohesion makes it want to go towards neighbours
+      if (neighbours[TYPES.COHESION].length > 0) {
+        boid.tint = COLORS[TYPES.COHESION];
+        rotations[TYPES.COHESION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.COHESION], boid);
       }
 
-      if (alignmentNeighbours.length > 0) {
-        boid.tint = COLORS.ALIGNMENT;
-        // alignment makes it want to fly in the same rotation
+      // alignment makes it want to fly in the same rotation
+      if (neighbours[TYPES.ALIGNMENT].length > 0) {
+        boid.tint = COLORS[TYPES.ALIGNMENT];
         // calculate their average direction
-        const rotations = alignmentNeighbours.map(each => each.rotation).reduce((a, b) => a + b, 0);
-        const avg = rotations / alignmentNeighbours.length;
-        f_alignment = avg;
+        const rotations = neighbours[TYPES.ALIGNMENT].map((each: Neighbour) => each.rotation).reduce((a: number, b: number) => a + b, 0);
+        const avg = rotations / neighbours[TYPES.ALIGNMENT].length;
+        rotations[TYPES.ALIGNMENT] = avg;
       }
 
-      // Calculate forces
-      if (separationNeighbours.length > 0) {
-        boid.tint = COLORS.SEPARATION;
-        // separation makes it want to fly away from neighbours
-        f_separation = Util.getNeighboursRotation(separationNeighbours, boid) - 3 * Math.PI / 2;
-      }
-
-      if (cohesionNeighbours.length + separationNeighbours.length + alignmentNeighbours.length < 1) {
-        boid.tint = COLORS.NONE;
+      // separation makes it want to fly away from neighbours
+      if (neighbours[TYPES.SEPARATION].length > 0) {
+        boid.tint = COLORS[TYPES.SEPARATION];
+        rotations[TYPES.SEPARATION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.SEPARATION], boid) - 3 * Math.PI / 2;
       }
 
       // Set the mouse as a predator
       const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
-      const mouseDistance = Util.distance(mouseCoords, boid);
-      if (mouseDistance < this.options.predatorRadius) {
-        boid.tint = COLORS.SEPARATION;
+      const mouseDistance = Util.distance(mouseCoords, boid, this.options.radius[TYPES.PREDATORS]);
+      if (mouseDistance < this.options.radius[TYPES.PREDATORS]) {
+        boid.tint = COLORS[TYPES.PREDATORS];
         const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS.SEPARATION, Util.fade(mouseDistance, this.options.predatorRadius), 2);
+        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.options.radius[TYPES.PREDATORS]), 2);
 
-        f_predators = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+        rotations[TYPES.PREDATORS] = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
       }
 
-      boid.desiredVector.rotation = (
-        f_cohesion * this.options.cohesionForce + 
-        f_separation * this.options.separationForce + 
-        f_alignment * this.options.alignmentForce + 
-        f_predators * this.options.predatorForce + 
-        f_obstacles * this.options.obstacleForce) / (
-          this.options.cohesionForce + 
-          this.options.separationForce + 
-          this.options.alignmentForce + 
-          this.options.predatorForce + 
-          this.options.obstacleForce
-        );
+      let totalRotation = boid.desiredVector.rotation;
+      let totalWeight = 1;
+
+      Object.values(TYPES).forEach(type => {
+        if (rotations[type] === null) {
+          return;
+        }
+        const weight = this.options.weight[type];
+        totalRotation += weight * rotations[type];
+        totalWeight += weight;
+      });
+
+      boid.desiredVector.rotation = totalRotation / totalWeight;
+
       // bit of random movement
       if (Math.random() * 100 < this.options.randomMoveChance) {
         boid.desiredVector.rotation += (Math.random() - 0.5) * Math.PI / 20;
@@ -245,8 +252,6 @@ export class Renderer {
       boid.x -= dx;
       boid.y += dy;
 
-      this.updateHeatmapCell(boid.x, boid.y);
-
       // Wrap around
       if (boid.x <= 0) {
         boid.x = maxX - 1;
@@ -259,14 +264,19 @@ export class Renderer {
       } else if (boid.y >= maxY) {
         boid.y = 1;
       }
+
+      this.updateHeatmapCell(boid.x, boid.y);
     }
   }
 
   private initBoidTexture() {
     // Prepare the boid texture for sprites
     const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xcccccc);
+    graphics.beginFill(0xffffff);
     graphics.lineStyle(0);
+    if (this.options.heatmap) {
+      graphics.lineStyle(2, 0xffffff);
+    }
     graphics.drawPolygon([
       new PIXI.Point(this.options.boidLength / 2, this.options.boidHeight),
       new PIXI.Point(0, 0),
@@ -292,7 +302,6 @@ export class Renderer {
       tint: true
     });
     this.heatmapContainer.zIndex = 1;
-    this.heatmapContainer.visible = false;
 
     // Prepare the heatmap texture
     const graphics = new PIXI.Graphics();
