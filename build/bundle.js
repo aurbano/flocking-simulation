@@ -43797,10 +43797,8 @@ var Renderer = (function () {
             _this.app.stage.addChild(_this.boidContainer);
             _this.initBoidTexture();
             _this.initHeatmap();
-            var maxX = _this.app.screen.width;
-            var maxY = _this.app.screen.height;
             for (var i = 0; i < _this.options.number; i++) {
-                var boid = new Boid(_this.options, maxX, maxY, _this.boidTexture);
+                var boid = new Boid(_this.options, _this.maxX, _this.maxY, _this.boidTexture);
                 _this.boidContainer.addChild(boid);
                 _this.boids.push(boid);
                 _this.updateHeatmapCell(boid.x, boid.y);
@@ -43822,6 +43820,9 @@ var Renderer = (function () {
             transparent: options.background === null,
             backgroundColor: options.background
         });
+        this.maxX = this.app.screen.width;
+        this.maxY = this.app.screen.height;
+        this.maxD = Math.max(this.maxX, this.maxY);
         this.stats = new stats_min();
         this.stats.showPanel(0);
         document.body.appendChild(this.stats.dom);
@@ -43850,9 +43851,6 @@ var Renderer = (function () {
     };
     Renderer.prototype.updateBoids = function (delta) {
         var _this = this;
-        var maxX = this.app.screen.width;
-        var maxY = this.app.screen.height;
-        var maxD = Math.max(maxX, maxY);
         var totalBoids = this.boids.length;
         var neighbourTypes = [
             TYPES.SEPARATION,
@@ -43892,7 +43890,7 @@ var Renderer = (function () {
                     distance: distance,
                     rotation: neighbourBoid.rotation,
                 };
-                boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
+                boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, this_1.maxD) * 0.2);
                 for (var _i = 0, neighbourTypes_1 = neighbourTypes; _i < neighbourTypes_1.length; _i++) {
                     var type = neighbourTypes_1[_i];
                     if (distance < this_1.options.radius[type]) {
@@ -43946,9 +43944,9 @@ var Renderer = (function () {
             var newMagnitude = totalWeight > 0 ? totalMagnitude / totalWeight : boid.desiredVector.magnitude;
             if (newRotation === boid.desiredVector.rotation) {
                 if (boid.x <= -this_1.options.returnMargin || boid.y <= -this_1.options.returnMargin ||
-                    boid.x >= maxX + this_1.options.returnMargin || boid.y >= maxY + this_1.options.returnMargin) {
-                    var newX = Math.random() * (maxX - 2 * this_1.options.returnMargin) + this_1.options.returnMargin;
-                    var newY = Math.random() * (maxY - 2 * this_1.options.returnMargin) + this_1.options.returnMargin;
+                    boid.x >= this_1.maxX + this_1.options.returnMargin || boid.y >= this_1.maxY + this_1.options.returnMargin) {
+                    var newX = Math.random() * (this_1.maxX - 2 * this_1.options.returnMargin) + this_1.options.returnMargin;
+                    var newY = Math.random() * (this_1.maxY - 2 * this_1.options.returnMargin) + this_1.options.returnMargin;
                     newRotation = Util.unwrap(boid.getAngleToPoint(newX - boid.x, newY - boid.y) - Math.PI / 2);
                 }
                 if (boid.desiredVector.magnitude > 1) {

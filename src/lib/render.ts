@@ -8,6 +8,9 @@ import { Boid } from "../model/boid";
 
 export class Renderer {
   private app: PIXI.Application;
+  private maxX: number;
+  private maxY: number;
+  private maxD: number; // the max of both axis
 
   private boids: Boid[] = [];
   private boidTexture: PIXI.Texture;
@@ -29,6 +32,10 @@ export class Renderer {
       transparent: options.background === null,
       backgroundColor: options.background
     });
+
+    this.maxX = this.app.screen.width;
+    this.maxY = this.app.screen.height;
+    this.maxD = Math.max(this.maxX, this.maxY);
 
     this.stats = new Stats();
     this.stats.showPanel(0);
@@ -82,12 +89,9 @@ export class Renderer {
     this.initBoidTexture();
     this.initHeatmap();
 
-    const maxX = this.app.screen.width;
-    const maxY = this.app.screen.height;
-
     // Initialize boids
     for (let i = 0; i < this.options.number; i++) {
-      const boid = new Boid(this.options, maxX, maxY, this.boidTexture);
+      const boid = new Boid(this.options, this.maxX, this.maxY, this.boidTexture);
 
       this.boidContainer.addChild(boid);
       this.boids.push(boid);
@@ -118,9 +122,6 @@ export class Renderer {
   };
 
   private updateBoids(delta: number) {
-    const maxX = this.app.screen.width;
-    const maxY = this.app.screen.height;
-    const maxD = Math.max(maxX, maxY);
     const totalBoids = this.boids.length;
 
     // Types for which we care about neighbours
@@ -175,7 +176,7 @@ export class Renderer {
           rotation: neighbourBoid.rotation,
         };
         
-        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, maxD) * 0.2);
+        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, this.maxD) * 0.2);
 
         for (let type of neighbourTypes) {
           if (distance < this.options.radius[type]) {
@@ -250,11 +251,11 @@ export class Renderer {
       if (newRotation === boid.desiredVector.rotation) {
         // no change, check if we're out of bounds to start heading back in
         if (boid.x <= -this.options.returnMargin || boid.y <= -this.options.returnMargin ||
-            boid.x >= maxX + this.options.returnMargin || boid.y >= maxY + this.options.returnMargin) {
+            boid.x >= this.maxX + this.options.returnMargin || boid.y >= this.maxY + this.options.returnMargin) {
 
           // lets make them return to a random point inside the screen + margin
-          const newX = Math.random() * (maxX - 2 * this.options.returnMargin) + this.options.returnMargin;
-          const newY = Math.random() * (maxY - 2 * this.options.returnMargin) + this.options.returnMargin;
+          const newX = Math.random() * (this.maxX - 2 * this.options.returnMargin) + this.options.returnMargin;
+          const newY = Math.random() * (this.maxY - 2 * this.options.returnMargin) + this.options.returnMargin;
           newRotation = Util.unwrap(boid.getAngleToPoint(newX - boid.x, newY - boid.y) - Math.PI / 2);
         }
 
