@@ -9,12 +9,14 @@ export function setupGui(options: Options, renderer: Renderer) {
     closed: false,
   });
 
-  const core = gui.addFolder("Core");
+  const core = gui.addFolder("Core (resets the simulation)");
   core.open();
   core.add(options, "boidLength", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
   core.add(options, "boidHeight", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
   core.add(options, "number", 1, 1000, 1).onFinishChange(() => { renderer.reset(); });
   core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
+  core.add(options, "debug").onFinishChange(() => { renderer.reset(); });
+  core.add(options, "heatmap").onFinishChange(() => { renderer.reset(); });
 
   const general = gui.addFolder("General");
   general.open();
@@ -22,6 +24,8 @@ export function setupGui(options: Options, renderer: Renderer) {
   general.add(options, "turningSpeed", 0, 100, 1);
   general.add(options, "visionAngle", 0, 180, 1);
   general.add(options, "randomMoveChance", 0, 100, 1);
+  general.add(options, "returnMargin", 0, 1000, 1);
+  general.add(options, "cooldown", 0, 1, 0.1);
 
   const heatmap = gui.addFolder("Heatmap");
   heatmap.open();

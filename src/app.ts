@@ -25,6 +25,8 @@ const options: Options = {
   turningSpeed: debug ? 2 : 10,
   visionAngle: 45,
   randomMoveChance: 10,
+  returnMargin: 100,
+  cooldown: 0.1,
 
   radius: {
     [TYPES.COHESION]: 400,

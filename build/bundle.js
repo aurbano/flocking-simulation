@@ -43534,13 +43534,14 @@ var Util = (function () {
     Util.random = function (min, max) {
         return min + Math.random() * (max - min);
     };
-    Util.getNeighboursWeightedRotation = function (neighbours, boid) {
-        if (neighbours.length < 1) {
-            return 0;
-        }
+    Util.getNeighboursWeightedVector = function (neighbours, boid) {
         var meanX = Util.arrayMean(neighbours, function (boid) { return boid.x; });
         var meanY = Util.arrayMean(neighbours, function (boid) { return boid.y; });
-        return Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2);
+        return {
+            rotation: Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2),
+            x: meanX,
+            y: meanY,
+        };
     };
     Util.getRotation = function (meanX, meanY, boid) {
         var mean_dx = meanX - boid.x;
@@ -43593,6 +43594,9 @@ var Util = (function () {
         }
         var wraps = Math.floor(angle / mod);
         return angle - wraps * mod;
+    };
+    Util.expDecay = function (x, scale, rampCenter, steepness) {
+        return scale / (1 + Math.exp(steepness * (x - rampCenter))) + 1;
     };
     return Util;
 }());
@@ -43777,8 +43781,20 @@ var Renderer = (function () {
         this.heatmapMax = 10;
         this.reset = function () {
             _this.stop();
-            _this.boidContainer.removeChildren();
+            _this.app.stage.removeChildren();
             _this.boids = [];
+            if (!_this.options.debug) {
+                _this.boidContainer = new particles_1(_this.options.number, {
+                    position: true,
+                    rotation: true,
+                    tint: true
+                });
+            }
+            else {
+                _this.boidContainer = new display_2();
+            }
+            _this.boidContainer.zIndex = 2;
+            _this.app.stage.addChild(_this.boidContainer);
             _this.initBoidTexture();
             _this.initHeatmap();
             var maxX = _this.app.screen.width;
@@ -43809,19 +43825,7 @@ var Renderer = (function () {
         this.stats = new stats_min();
         this.stats.showPanel(0);
         document.body.appendChild(this.stats.dom);
-        if (!this.options.debug) {
-            this.boidContainer = new particles_1(this.options.number, {
-                position: true,
-                rotation: true,
-                tint: true
-            });
-        }
-        else {
-            this.boidContainer = new display_2();
-        }
         this.reset();
-        this.boidContainer.zIndex = 2;
-        this.app.stage.addChild(this.boidContainer);
         this.updateSettings();
         document
             .getElementById(this.options.containerId)
@@ -43858,10 +43862,13 @@ var Renderer = (function () {
         var _loop_1 = function (i) {
             var boid = this_1.boids[i];
             boid.tint = UI_COLORS.NONE;
-            var rotations = {};
+            var forces = {};
             var neighbours = {};
             Object.values(TYPES).forEach(function (type) {
-                rotations[type] = null;
+                forces[type] = {
+                    rotation: null,
+                    magnitude: 0,
+                };
                 neighbours[type] = [];
             });
             boid.resetDebug();
@@ -43896,17 +43903,23 @@ var Renderer = (function () {
             }
             if (neighbours[TYPES.COHESION].length > 0) {
                 boid.tint = COLORS[TYPES.COHESION];
-                rotations[TYPES.COHESION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.COHESION], boid);
+                var weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
+                forces[TYPES.COHESION].rotation = weightedVector.rotation;
+                var cohesionDistance = Util.distance(weightedVector, boid, this_1.options.radius[TYPES.COHESION]);
+                forces[TYPES.COHESION].magnitude = 0.5 + cohesionDistance / this_1.options.radius[TYPES.COHESION];
             }
             if (neighbours[TYPES.ALIGNMENT].length > 0) {
                 boid.tint = COLORS[TYPES.ALIGNMENT];
-                var rotations_1 = neighbours[TYPES.ALIGNMENT].map(function (each) { return each.rotation; }).reduce(function (a, b) { return a + b; }, 0);
-                var avg = rotations_1 / neighbours[TYPES.ALIGNMENT].length;
-                rotations_1[TYPES.ALIGNMENT] = avg;
+                var rotations = neighbours[TYPES.ALIGNMENT].map(function (each) { return each.rotation; }).reduce(function (a, b) { return a + b; }, 0);
+                var avg = rotations / neighbours[TYPES.ALIGNMENT].length;
+                forces[TYPES.ALIGNMENT].rotation = avg;
+                forces[TYPES.ALIGNMENT].magnitude = 1;
             }
             if (neighbours[TYPES.SEPARATION].length > 0) {
                 boid.tint = COLORS[TYPES.SEPARATION];
-                rotations[TYPES.SEPARATION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.SEPARATION], boid) - 3 * Math.PI / 2;
+                var weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
+                forces[TYPES.SEPARATION].rotation = weightedVector.rotation - 3 * Math.PI / 2;
+                forces[TYPES.SEPARATION].magnitude = 1.5;
             }
             var mouseCoords = this_1.app.renderer.plugins.interaction.mouse.global;
             var mouseDistance = Util.distance(mouseCoords, boid, this_1.options.radius[TYPES.PREDATORS]);
@@ -43914,19 +43927,36 @@ var Renderer = (function () {
                 boid.tint = COLORS[TYPES.PREDATORS];
                 var localMouseCoords = this_1.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
                 boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this_1.options.radius[TYPES.PREDATORS]), 2);
-                rotations[TYPES.PREDATORS] = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+                forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+                forces[TYPES.PREDATORS].magnitude = Util.expDecay(mouseDistance, 1, this_1.options.radius[TYPES.PREDATORS] * 0.9, 5);
             }
             var totalRotation = boid.desiredVector.rotation;
-            var totalWeight = 1;
+            var totalWeight = 0;
+            var totalMagnitude = boid.desiredVector.magnitude;
             Object.values(TYPES).forEach(function (type) {
-                if (rotations[type] === null) {
+                if (forces[type].rotation === null) {
                     return;
                 }
                 var weight = _this.options.weight[type];
-                totalRotation += weight * rotations[type];
+                totalRotation += weight * forces[type].rotation;
                 totalWeight += weight;
+                totalMagnitude += weight * forces[type].magnitude;
             });
-            boid.desiredVector.rotation = totalRotation / totalWeight;
+            var newRotation = totalWeight > 0 ? totalRotation / totalWeight : boid.desiredVector.rotation;
+            var newMagnitude = totalWeight > 0 ? totalMagnitude / totalWeight : boid.desiredVector.magnitude;
+            if (newRotation === boid.desiredVector.rotation) {
+                if (boid.x <= -this_1.options.returnMargin || boid.y <= -this_1.options.returnMargin ||
+                    boid.x >= maxX + this_1.options.returnMargin || boid.y >= maxY + this_1.options.returnMargin) {
+                    var newX = Math.random() * (maxX - 2 * this_1.options.returnMargin) + this_1.options.returnMargin;
+                    var newY = Math.random() * (maxY - 2 * this_1.options.returnMargin) + this_1.options.returnMargin;
+                    newRotation = Util.unwrap(boid.getAngleToPoint(newX - boid.x, newY - boid.y) - Math.PI / 2);
+                }
+                if (boid.desiredVector.magnitude > 1) {
+                    newMagnitude = Math.max(1, boid.desiredVector.magnitude - this_1.options.cooldown / 10);
+                }
+            }
+            boid.desiredVector.rotation = newRotation;
+            boid.desiredVector.magnitude = newMagnitude;
             if (Math.random() * 100 < this_1.options.randomMoveChance) {
                 boid.desiredVector.rotation += (Math.random() - 0.5) * Math.PI / 20;
             }
@@ -43937,24 +43967,15 @@ var Renderer = (function () {
             var absDiff = Math.abs(diff);
             if (absDiff > 0) {
                 var direction = absDiff / diff;
-                var turnAmount = Math.min(absDiff, 0.01 * this_1.options.turningSpeed);
+                var turnAmount = Math.min(absDiff, 0.01 * this_1.options.turningSpeed * boid.desiredVector.magnitude);
                 boid.rotation = Util.unwrap(boid.rotation + direction * turnAmount);
             }
-            var dx = Math.sin(boid.rotation) * delta;
-            var dy = Math.cos(boid.rotation) * delta;
+            var dx = Math.sin(boid.rotation) * delta * boid.desiredVector.magnitude;
+            var dy = Math.cos(boid.rotation) * delta * boid.desiredVector.magnitude;
             boid.x -= dx;
             boid.y += dy;
-            if (boid.x <= 0) {
-                boid.x = maxX - 1;
-            }
-            else if (boid.x >= maxX) {
-                boid.x = 1;
-            }
-            if (boid.y <= 0) {
-                boid.y = maxY - 1;
-            }
-            else if (boid.y >= maxY) {
-                boid.y = 1;
+            if (this_1.options.heatmap) {
+                boid.tint = 0xffffff;
             }
             this_1.updateHeatmapCell(boid.x, boid.y);
         };
@@ -46550,18 +46571,22 @@ function setupGui(options, renderer) {
         name: "Setings",
         closed: false,
     });
-    var core = gui.addFolder("Core");
+    var core = gui.addFolder("Core (resets the simulation)");
     core.open();
     core.add(options, "boidLength", 1, 50, 1).onFinishChange(function () { renderer.reset(); });
     core.add(options, "boidHeight", 1, 50, 1).onFinishChange(function () { renderer.reset(); });
     core.add(options, "number", 1, 1000, 1).onFinishChange(function () { renderer.reset(); });
     core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(function () { renderer.reset(); });
+    core.add(options, "debug").onFinishChange(function () { renderer.reset(); });
+    core.add(options, "heatmap").onFinishChange(function () { renderer.reset(); });
     var general = gui.addFolder("General");
     general.open();
     general.add(options, "speed", 0, 10, 0.1).onChange(function () { renderer.updateSettings(); });
     general.add(options, "turningSpeed", 0, 100, 1);
     general.add(options, "visionAngle", 0, 180, 1);
     general.add(options, "randomMoveChance", 0, 100, 1);
+    general.add(options, "returnMargin", 0, 1000, 1);
+    general.add(options, "cooldown", 0, 1, 0.1);
     var heatmap = gui.addFolder("Heatmap");
     heatmap.open();
     heatmap.add(options, "heatmapIncrease", 0, 500, 0.1);
@@ -46610,6 +46635,8 @@ var options = {
     turningSpeed: debug ? 2 : 10,
     visionAngle: 45,
     randomMoveChance: 10,
+    returnMargin: 100,
+    cooldown: 0.1,
     radius: (_a$1 = {},
         _a$1[TYPES.COHESION] = 400,
         _a$1[TYPES.ALIGNMENT] = 100,

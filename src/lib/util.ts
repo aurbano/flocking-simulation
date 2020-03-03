@@ -12,18 +12,19 @@ export class Util {
     return min + Math.random() * (max - min);
   }
 
-  public static getNeighboursWeightedRotation(
+  public static getNeighboursWeightedVector(
     neighbours: Array<Neighbour>,
     boid: Boid
   ) {
-    if (neighbours.length < 1) {
-      return 0;
-    }
     // [meanX, meanY] is the weighted center of mass of the neighbours
     const meanX = Util.arrayMean(neighbours, (boid: Boid) => boid.x);
     const meanY = Util.arrayMean(neighbours, (boid: Boid) => boid.y);
 
-    return Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2);
+    return {
+      rotation: Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2),
+      x: meanX,
+      y: meanY,
+    };
   }
 
   public static getRotation(meanX: number, meanY: number, boid: PIXI.Sprite) {
@@ -94,6 +95,9 @@ export class Util {
     }
     const wraps = Math.floor(angle / mod);
     return angle - wraps * mod;
- 
+ }
+
+ public static expDecay(x: number, scale: number, rampCenter: number, steepness: number) {
+   return scale / (1 + Math.exp(steepness * (x - rampCenter))) + 1
  }
 }

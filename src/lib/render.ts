@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import Stats from "stats.js";
 
-import { Options, Neighbour } from "../model/types";
+import { Options, Neighbour, Force } from "../model/types";
 import { Util } from "./util";
 import { COLORS, UI_COLORS, TYPES } from "./constants";
 import { Boid } from "../model/boid";
@@ -34,21 +34,7 @@ export class Renderer {
     this.stats.showPanel(0);
     document.body.appendChild(this.stats.dom);
 
-    if (!this.options.debug) {
-      this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
-        position: true,
-        rotation: true,
-        tint: true
-      });
-    } else {
-      this.boidContainer = new PIXI.Container();
-    }
-
     this.reset();
-
-    this.boidContainer.zIndex = 2;
-    this.app.stage.addChild(this.boidContainer);
-
     this.updateSettings();
 
     // Render the app
@@ -77,8 +63,21 @@ export class Renderer {
   public reset = () => {
     this.stop();
 
-    this.boidContainer.removeChildren();
+    this.app.stage.removeChildren();
     this.boids = [];
+
+    if (!this.options.debug) {
+      this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
+        position: true,
+        rotation: true,
+        tint: true
+      });
+    } else {
+      this.boidContainer = new PIXI.Container();
+    }
+
+    this.boidContainer.zIndex = 2;
+    this.app.stage.addChild(this.boidContainer);
 
     this.initBoidTexture();
     this.initHeatmap();
@@ -136,11 +135,16 @@ export class Renderer {
       boid.tint = UI_COLORS.NONE;
 
       // Forces that determine flocking
-      const rotations: any = {};
+      const forces: {
+        [key: string]: Force,
+      } = {};
       const neighbours: any = {};
 
       Object.values(TYPES).forEach(type => {
-        rotations[type] = null;
+        forces[type] = {
+          rotation: null,
+          magnitude: 0,
+        };
         neighbours[type] = [];
       });
 
@@ -184,7 +188,12 @@ export class Renderer {
       // cohesion makes it want to go towards neighbours
       if (neighbours[TYPES.COHESION].length > 0) {
         boid.tint = COLORS[TYPES.COHESION];
-        rotations[TYPES.COHESION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.COHESION], boid);
+        const weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
+        forces[TYPES.COHESION].rotation = weightedVector.rotation;
+
+        // linear force for cohesion
+        const cohesionDistance = Util.distance(weightedVector, boid, this.options.radius[TYPES.COHESION]);
+        forces[TYPES.COHESION].magnitude = 0.5 + cohesionDistance / this.options.radius[TYPES.COHESION];
       }
 
       // alignment makes it want to fly in the same rotation
@@ -193,13 +202,16 @@ export class Renderer {
         // calculate their average direction
         const rotations = neighbours[TYPES.ALIGNMENT].map((each: Neighbour) => each.rotation).reduce((a: number, b: number) => a + b, 0);
         const avg = rotations / neighbours[TYPES.ALIGNMENT].length;
-        rotations[TYPES.ALIGNMENT] = avg;
+        forces[TYPES.ALIGNMENT].rotation = avg;
+        forces[TYPES.ALIGNMENT].magnitude = 1;
       }
 
       // separation makes it want to fly away from neighbours
       if (neighbours[TYPES.SEPARATION].length > 0) {
         boid.tint = COLORS[TYPES.SEPARATION];
-        rotations[TYPES.SEPARATION] = Util.getNeighboursWeightedRotation(neighbours[TYPES.SEPARATION], boid) - 3 * Math.PI / 2;
+        const weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
+        forces[TYPES.SEPARATION].rotation = weightedVector.rotation - 3 * Math.PI / 2;
+        forces[TYPES.SEPARATION].magnitude = 1.5;
       }
 
       // Set the mouse as a predator
@@ -210,22 +222,50 @@ export class Renderer {
         const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
         boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.options.radius[TYPES.PREDATORS]), 2);
 
-        rotations[TYPES.PREDATORS] = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+        forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+        forces[TYPES.PREDATORS].magnitude = Util.expDecay(mouseDistance, 1, this.options.radius[TYPES.PREDATORS] * 0.9, 5);
       }
 
       let totalRotation = boid.desiredVector.rotation;
-      let totalWeight = 1;
+      let totalWeight = 0;
+
+      let totalMagnitude = boid.desiredVector.magnitude;
 
       Object.values(TYPES).forEach(type => {
-        if (rotations[type] === null) {
+        if (forces[type].rotation === null) {
           return;
         }
+        // add rotation
         const weight = this.options.weight[type];
-        totalRotation += weight * rotations[type];
+        totalRotation += weight * forces[type].rotation;
         totalWeight += weight;
+
+        // add magnitude
+        totalMagnitude += weight * forces[type].magnitude;
       });
 
-      boid.desiredVector.rotation = totalRotation / totalWeight;
+      let newRotation = totalWeight > 0 ? totalRotation / totalWeight : boid.desiredVector.rotation;
+      let newMagnitude = totalWeight > 0 ? totalMagnitude / totalWeight : boid.desiredVector.magnitude;
+
+      if (newRotation === boid.desiredVector.rotation) {
+        // no change, check if we're out of bounds to start heading back in
+        if (boid.x <= -this.options.returnMargin || boid.y <= -this.options.returnMargin ||
+            boid.x >= maxX + this.options.returnMargin || boid.y >= maxY + this.options.returnMargin) {
+
+          // lets make them return to a random point inside the screen + margin
+          const newX = Math.random() * (maxX - 2 * this.options.returnMargin) + this.options.returnMargin;
+          const newY = Math.random() * (maxY - 2 * this.options.returnMargin) + this.options.returnMargin;
+          newRotation = Util.unwrap(boid.getAngleToPoint(newX - boid.x, newY - boid.y) - Math.PI / 2);
+        }
+
+        // cool down the magnitude
+        if (boid.desiredVector.magnitude > 1) {
+          newMagnitude = Math.max(1, boid.desiredVector.magnitude - this.options.cooldown / 10);
+        }
+      }
+
+      boid.desiredVector.rotation = newRotation;
+      boid.desiredVector.magnitude = newMagnitude;
 
       // bit of random movement
       if (Math.random() * 100 < this.options.randomMoveChance) {
@@ -241,28 +281,19 @@ export class Renderer {
       const absDiff = Math.abs(diff);
       if (absDiff > 0) {
         const direction = absDiff / diff;
-        const turnAmount = Math.min(absDiff, 0.01 * this.options.turningSpeed);
+        const turnAmount = Math.min(absDiff, 0.01 * this.options.turningSpeed * boid.desiredVector.magnitude);
         boid.rotation = Util.unwrap(boid.rotation + direction * turnAmount);
       }
 
       // Now use the angle and the speed to calculate dx and dy
-      const dx = Math.sin(boid.rotation) * delta;
-      const dy = Math.cos(boid.rotation) * delta;
+      const dx = Math.sin(boid.rotation) * delta * boid.desiredVector.magnitude;
+      const dy = Math.cos(boid.rotation) * delta * boid.desiredVector.magnitude;
 
       boid.x -= dx;
       boid.y += dy;
 
-      // Wrap around
-      if (boid.x <= 0) {
-        boid.x = maxX - 1;
-      } else if (boid.x >= maxX) {
-        boid.x = 1;
-      }
-
-      if (boid.y <= 0) {
-        boid.y = maxY - 1;
-      } else if (boid.y >= maxY) {
-        boid.y = 1;
+      if (this.options.heatmap) {
+        boid.tint = 0xffffff;
       }
 
       this.updateHeatmapCell(boid.x, boid.y);
