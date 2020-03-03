@@ -5,7 +5,6 @@ export type Options = {
   number: number,
   heatmapGridSize: number,
   background: number,
-  debug?: boolean,
 
   heatmap: boolean,
   heatmapIncrease: number,
@@ -37,7 +36,6 @@ export type Force = {
 export type Neighbour = {
   x: number,
   y: number,
-  distance: number,
   rotation: number,
   magnitude: number,
 };

@@ -4,7 +4,9 @@
   "description": "Flock Behavior Simulation rendered in WebGL",
   "scripts": {
     "start": "npm-run-all --parallel build:watch serve",
-    "build": "rollup -c",
+    "build:prod": "cross-env NODE_ENV=production rollup -c",
+    "build:dev": "cross-env NODE_ENV=development rollup -c",
+    "build": "npm-run-all build:dev build:prod",
     "build:watch": "rollup -c -w",
     "serve": "browser-sync start -s -f build/**/*"
   },
@@ -15,6 +17,9 @@
   "license": "AGPL-3",
   "private": true,
   "dependencies": {
+    "@types/dat.gui": "^0.7.5",
+    "@types/node": "^10.0.3",
+    "@types/stats.js": "^0.17.0",
     "dat.gui": "^0.7.6",
     "pixi.js": "^5.2.1",
     "simplex-noise": "^2.4.0",
@@ -23,13 +28,13 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.0.2",
     "@rollup/plugin-node-resolve": "^7.1.1",
+    "@rollup/plugin-replace": "^2.3.1",
     "@rollup/plugin-typescript": "^3.0.0",
-    "@types/dat.gui": "^0.7.5",
-    "@types/node": "^10.0.3",
-    "@types/stats.js": "^0.17.0",
     "browser-sync": "^2.26.7",
+    "cross-env": "^7.0.1",
     "npm-run-all": "^4.1.5",
     "rollup": "^1.31.0",
+    "rollup-plugin-terser": "^5.2.0",
     "tslib": "^1.10.0",
     "typescript": "~3.7.5"
   }

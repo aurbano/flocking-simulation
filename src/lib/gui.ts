@@ -6,6 +6,7 @@ import { TYPES } from "./constants";
 export function setupGui(options: Options, renderer: Renderer) {
   const gui = new dat.GUI({
     name: "Setings",
+    closed: true,
   });
 
   const core = gui.addFolder("Core (resets the simulation)");
@@ -14,7 +15,6 @@ export function setupGui(options: Options, renderer: Renderer) {
   core.add(options, "boidHeight", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
   core.add(options, "number", 1, 1000, 1).onFinishChange(() => { renderer.reset(); });
   core.add(options, "heatmapGridSize", 1, 50, 1).onFinishChange(() => { renderer.reset(); });
-  core.add(options, "debug").onFinishChange(() => { renderer.reset(); });
   core.add(options, "heatmap").onFinishChange(() => { renderer.reset(); });
 
   const general = gui.addFolder("General");

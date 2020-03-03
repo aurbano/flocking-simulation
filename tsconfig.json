@@ -9,7 +9,7 @@
     "esModuleInterop": true
   },
   "include": [
-    "src/**/*", "types/noise.d.ts"
+    "src/**/*"
   ],
   "exclude": [
       "node_modules"

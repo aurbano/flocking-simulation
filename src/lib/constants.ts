@@ -1,5 +1,7 @@
 import * as PIXI from "pixi.js";
 
+export const BUILD_ENV: any = '__buildEnv__';
+
 export const TYPES = {
   PREDATORS: 'predators',
   SEPARATION: 'separation',

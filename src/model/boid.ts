@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import { Options } from "./types";
-import { COLORS, textStyle, UI_COLORS, TYPES } from "../lib/constants";
+import { COLORS, textStyle, UI_COLORS, TYPES, BUILD_ENV } from "../lib/constants";
 
 type Vector = {
   rotation: number; // radians
@@ -38,7 +38,7 @@ export class Boid extends PIXI.Sprite {
       magnitude: 1
     };
 
-    this.initDebug();
+    (BUILD_ENV === 'development') && this.initDebug();
   }
 
   /**
@@ -46,7 +46,17 @@ export class Boid extends PIXI.Sprite {
    * @param neighbour 
    */
   public getNeighbourCoords(neighbour: Boid) {
-    return this.toLocal(new PIXI.Point(0, 0), neighbour);
+    const sin = Math.sin(this.rotation);
+    const cos = Math.cos(this.rotation);
+
+    const x = neighbour.x - this.x;
+    const y = neighbour.y - this.y;
+
+    // apply the corresponding rotation matrix
+    return new PIXI.Point(
+      x * cos + y * sin,
+      -x * sin + y * cos
+    )
   }
 
   public getAngleToPoint(x: number, y: number) {
@@ -79,7 +89,7 @@ export class Boid extends PIXI.Sprite {
   }
 
   public drawDebugLine(x: number, y:number, color: number, alpha: number = 1, thickness: number = 1) {
-    if (!this.options.debug) {
+    if (BUILD_ENV !== 'development') {
       return;
     }
     this.debugNeighbours.lineStyle(thickness, color, alpha);
@@ -90,7 +100,7 @@ export class Boid extends PIXI.Sprite {
    * Draws a line at the given rotation from the boid's y+ axis
    */
   public drawDebugVector(rotation: number, magnitude: number, color: number, alpha: number = 1, thickness: number = 1) {
-    if (!this.options.debug) {
+    if (BUILD_ENV !== 'development') {
       return;
     }
     const vecX = Math.sin(rotation) * magnitude;
@@ -100,7 +110,7 @@ export class Boid extends PIXI.Sprite {
   }
 
   public resetDebug() {
-    if (!this.options.debug) {
+    if (BUILD_ENV !== 'development') {
       return;
     }
     this.debugInfo.text = '';
@@ -117,36 +127,14 @@ export class Boid extends PIXI.Sprite {
   }
 
   public debugLog(msg: string) {
-    if (!this.options.debug) {
+    if (BUILD_ENV !== 'development') {
       return;
     }
     this.debugInfo.text += msg + '\n';
   }
 
-  private drawFilledArc(color: number, alpha: number, angle: number, radius: number, graphics: PIXI.Graphics) {
-    graphics.beginFill(color, alpha);
-    graphics
-      .moveTo(0, 0)
-      .arc(
-        0,
-        0,
-        radius,
-        Math.PI / 2,
-        angle + Math.PI / 2
-      )
-      .moveTo(0, 0)
-      .arc(
-        0,
-        0,
-        radius,
-        Math.PI / 2 - angle,
-        Math.PI / 2
-      );
-    graphics.endFill();
-  }
-
   private initDebug() {
-    if (!this.options.debug) {
+    if (BUILD_ENV !== 'development') {
       return;
     }
     const visionAngle = (this.options.visionAngle * Math.PI) / 180;
@@ -203,5 +191,27 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.name = "debugNeighbours";
 
     this.addChild(this.debugVision, this.debugNeighbours, this.debugInfo);
+  }
+
+  private drawFilledArc(color: number, alpha: number, angle: number, radius: number, graphics: PIXI.Graphics) {
+    graphics.beginFill(color, alpha);
+    graphics
+      .moveTo(0, 0)
+      .arc(
+        0,
+        0,
+        radius,
+        Math.PI / 2,
+        angle + Math.PI / 2
+      )
+      .moveTo(0, 0)
+      .arc(
+        0,
+        0,
+        radius,
+        Math.PI / 2 - angle,
+        Math.PI / 2
+      );
+    graphics.endFill();
   }
 }

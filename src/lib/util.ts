@@ -17,8 +17,8 @@ export class Util {
     boid: Boid
   ) {
     // [meanX, meanY] is the weighted center of mass of the neighbours
-    const meanX = Util.arrayMean(neighbours, (boid: Boid) => boid.x);
-    const meanY = Util.arrayMean(neighbours, (boid: Boid) => boid.y);
+    const meanX = Util.arrayMean(neighbours, (boid: Neighbour) => boid.x);
+    const meanY = Util.arrayMean(neighbours, (boid: Neighbour) => boid.y);
 
     return {
       rotation: Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2),
@@ -40,15 +40,19 @@ export class Util {
     return Math.round((rad * 180) / Math.PI);
   }
 
+  /**
+   * Returns null if distance is > max for sure
+   * Otherwise it returns the abs, not the sqrt
+   */
   public static distance(p1: Position, p2: Position, max?: number) {
     const dx = Math.abs(p1.x - p2.x);
     const dy = Math.abs(p1.y - p2.y);
     if (max) {
       if (dx >= max || dy >= max) {
-        return max;
+        return null;
       }
     }
-    return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    return Math.pow(dx, 2) + Math.pow(dy, 2);
   }
 
   public static arrayMean(arr: Array<any>, getKey: Function) {

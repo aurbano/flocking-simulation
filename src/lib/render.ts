@@ -3,7 +3,7 @@ import Stats from "stats.js";
 
 import { Options, Neighbour, Force } from "../model/types";
 import { Util } from "./util";
-import { COLORS, UI_COLORS, TYPES } from "./constants";
+import { COLORS, UI_COLORS, TYPES, BUILD_ENV } from "./constants";
 import { Boid } from "../model/boid";
 
 export class Renderer {
@@ -23,6 +23,11 @@ export class Renderer {
   private heatmapMax: number = 10;
 
   private stats: Stats;
+
+  // store the radius^2 for speed
+  private radius: {
+    [key: string]: number;
+  };
 
   constructor(private options: Options) {
     this.app = new PIXI.Application({
@@ -70,10 +75,15 @@ export class Renderer {
   public reset = () => {
     this.stop();
 
+    this.radius = {};
+    Object.values(TYPES).forEach(type => {
+      this.radius[type] = Math.pow(this.options.radius[type], 2);
+    });
+
     this.app.stage.removeChildren();
     this.boids = [];
 
-    if (!this.options.debug) {
+    if (!(BUILD_ENV === 'development')) {
       this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
         position: true,
         rotation: true,
@@ -133,6 +143,7 @@ export class Renderer {
 
     for (let i = 0; i < totalBoids; i++) {
       const boid = this.boids[i];
+      (BUILD_ENV === 'development') && boid.debugLog(`[${i}]`);
       boid.tint = UI_COLORS.NONE;
 
       // Forces that determine flocking
@@ -149,7 +160,7 @@ export class Renderer {
         neighbours[type] = [];
       });
 
-      boid.resetDebug();
+      (BUILD_ENV === 'development') && boid.resetDebug();
 
       // Iterate over the rest of the boids to find neighbours
       for (let a = 0; a < totalBoids; a++) {
@@ -157,6 +168,12 @@ export class Renderer {
           continue;
         }
         const neighbourBoid = this.boids[a];
+
+        const distance = Util.distance(boid, neighbourBoid, this.options.radius[TYPES.COHESION]);
+        if (distance === null) {
+          continue;
+        }
+
         const neighbourCoords = boid.getNeighbourCoords(neighbourBoid);
         const neighbourInfo = boid.getPointInfo(neighbourCoords.x, neighbourCoords.y);
 
@@ -164,25 +181,19 @@ export class Renderer {
           continue;
         }
 
-        const distance = Util.distance(boid, neighbourBoid, this.options.radius[TYPES.COHESION]);
-        if (distance >= this.options.radius[TYPES.COHESION]) {
-          continue;
-        }
-
         const neighbour: Neighbour = {
           x: neighbourBoid.x,
           y: neighbourBoid.y,
-          distance,
           rotation: neighbourBoid.rotation,
           magnitude: neighbourBoid.desiredVector.magnitude,
         };
         
-        boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, this.maxD) * 0.2);
+        (BUILD_ENV === 'development') && boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, Math.sqrt(distance), UI_COLORS.VISIBLE, Util.fade(distance, this.maxD) * 0.2);
 
         for (let type of neighbourTypes) {
-          if (distance < this.options.radius[type]) {
+          if (distance < this.radius[type]) {
             neighbours[type].push(neighbour);
-            boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS[type], Util.fade(distance, this.options.radius[type]) * 0.5, 2);
+            (BUILD_ENV === 'development') && boid.drawDebugLine(neighbourCoords.x, neighbourCoords.y, COLORS[type], Util.fade(distance, this.radius[type]) * 0.5, 2);
           }
         }
       }
@@ -197,7 +208,7 @@ export class Renderer {
         const cohesionDistance = Util.distance(weightedVector, boid, this.options.radius[TYPES.COHESION]);
         forces[TYPES.COHESION].magnitude = Math.max(
           forces[TYPES.COHESION].magnitude,
-          0.5 + cohesionDistance / this.options.radius[TYPES.COHESION]
+          0.5 + cohesionDistance / this.radius[TYPES.COHESION]
         );
       }
 
@@ -229,15 +240,18 @@ export class Renderer {
       if (this.options.mouseAsPredator) {
         const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
         const mouseDistance = Util.distance(mouseCoords, boid, this.options.radius[TYPES.PREDATORS]);
-        if (mouseDistance < this.options.radius[TYPES.PREDATORS]) {
+        if (mouseDistance !== null && mouseDistance < this.radius[TYPES.PREDATORS]) {
           boid.tint = COLORS[TYPES.PREDATORS];
-          const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-          boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.options.radius[TYPES.PREDATORS]), 2);
-  
+
+          if (BUILD_ENV === 'development') {
+            const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
+            boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.radius[TYPES.PREDATORS]), 2);
+          }
+          
           forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
           forces[TYPES.PREDATORS].magnitude = Math.max(
             forces[TYPES.PREDATORS].magnitude,
-            Util.expDecay(mouseDistance, 1, this.options.radius[TYPES.PREDATORS] * 0.7, 5)
+            Util.expDecay(mouseDistance, 1, this.radius[TYPES.PREDATORS] * 0.7, 5)
           );
         }
       }
@@ -262,7 +276,7 @@ export class Renderer {
       let newRotation = totalWeight > 0 ? totalRotation / totalWeight : boid.desiredVector.rotation;
       let newMagnitude = totalWeight > 0 ? totalMagnitude / totalWeight : boid.desiredVector.magnitude;
 
-      if (newRotation === boid.desiredVector.rotation) {
+      if (newRotation - boid.desiredVector.rotation < 0.01) {
         // no change, check if we're out of bounds to start heading back in
         if (boid.x <= -this.options.returnMargin || boid.y <= -this.options.returnMargin ||
             boid.x >= this.maxX + this.options.returnMargin || boid.y >= this.maxY + this.options.returnMargin) {

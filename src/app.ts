@@ -1,12 +1,12 @@
 import { Options } from './model/types';
 import { Renderer } from './lib/render';
 import { setupGui } from './lib/gui';
-import { TYPES } from './lib/constants';
+import { TYPES, BUILD_ENV } from './lib/constants';
 
 const urlParams = new URLSearchParams(window.location.search);
-const debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ? true : false;
 const heatmap = urlParams.get('heatmap') === '' || urlParams.get('heatmap') === 'true' ? true : false;
 
+const debug = BUILD_ENV === 'development';
 
 const options: Options = {
   containerId: 'flock',
@@ -15,7 +15,6 @@ const options: Options = {
   number: debug ? 5 : 150,
   heatmapGridSize: 10,
   background: null,
-  debug: debug,
 
   mouseAsPredator: true,
 
