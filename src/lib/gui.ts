@@ -25,6 +25,7 @@ export function setupGui(options: Options, renderer: Renderer) {
   general.add(options, "randomMoveChance", 0, 100, 1);
   general.add(options, "returnMargin", 0, 1000, 1);
   general.add(options, "cooldown", 0, 1, 0.1);
+  core.add(options, "mouseAsPredator");
 
   const heatmap = gui.addFolder("Heatmap");
   heatmap.open();
@@ -50,10 +51,14 @@ export function setupGui(options: Options, renderer: Renderer) {
   const methods = {
     togglePause: () => {
       renderer.togglePause();
-    }
+    },
+    reset: () => {
+      renderer.reset();
+    },
   };
 
   gui.add(methods, "togglePause");
+  gui.add(methods, "reset");
 
   return gui;
 }

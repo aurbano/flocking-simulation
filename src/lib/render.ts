@@ -226,18 +226,20 @@ export class Renderer {
       }
 
       // Set the mouse as a predator
-      const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
-      const mouseDistance = Util.distance(mouseCoords, boid, this.options.radius[TYPES.PREDATORS]);
-      if (mouseDistance < this.options.radius[TYPES.PREDATORS]) {
-        boid.tint = COLORS[TYPES.PREDATORS];
-        const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
-        boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.options.radius[TYPES.PREDATORS]), 2);
-
-        forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
-        forces[TYPES.PREDATORS].magnitude = Math.max(
-          forces[TYPES.PREDATORS].magnitude,
-          Util.expDecay(mouseDistance, 1, this.options.radius[TYPES.PREDATORS] * 0.9, 5)
-        );
+      if (this.options.mouseAsPredator) {
+        const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
+        const mouseDistance = Util.distance(mouseCoords, boid, this.options.radius[TYPES.PREDATORS]);
+        if (mouseDistance < this.options.radius[TYPES.PREDATORS]) {
+          boid.tint = COLORS[TYPES.PREDATORS];
+          const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
+          boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.options.radius[TYPES.PREDATORS]), 2);
+  
+          forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+          forces[TYPES.PREDATORS].magnitude = Math.max(
+            forces[TYPES.PREDATORS].magnitude,
+            Util.expDecay(mouseDistance, 1, this.options.radius[TYPES.PREDATORS] * 0.7, 5)
+          );
+        }
       }
 
       let totalRotation = 0;

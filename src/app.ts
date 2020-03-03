@@ -17,6 +17,8 @@ const options: Options = {
   background: null,
   debug: debug,
 
+  mouseAsPredator: true,
+
   heatmap: heatmap,
   heatmapIncrease: 50,
   heatmapAttenuation: 100,

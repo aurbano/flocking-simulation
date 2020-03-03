@@ -11,6 +11,8 @@ export type Options = {
   heatmapIncrease: number,
   heatmapAttenuation: number,
 
+  mouseAsPredator: boolean,
+
   speed: number,
   turningSpeed: number,
   randomMoveChance: number,
