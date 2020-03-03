@@ -34,11 +34,11 @@ export function setupGui(options: Options, renderer: Renderer) {
 
   const distances = gui.addFolder("Distances");
   distances.open();
-  distances.add(options.radius, TYPES.COHESION, 0, 500, 1);
-  distances.add(options.radius, TYPES.SEPARATION, 0, 500, 1);
-  distances.add(options.radius, TYPES.ALIGNMENT, 0, 500, 1);
-  distances.add(options.radius, TYPES.PREDATORS, 0, 500, 1);
-  distances.add(options.radius, TYPES.OBSTACLES, 0, 500, 1);
+  distances.add(options.radius, TYPES.COHESION, 0, 500, 1).onFinishChange(() => { renderer.reset(); });
+  distances.add(options.radius, TYPES.SEPARATION, 0, 500, 1).onFinishChange(() => { renderer.reset(); });
+  distances.add(options.radius, TYPES.ALIGNMENT, 0, 500, 1).onFinishChange(() => { renderer.reset(); });
+  distances.add(options.radius, TYPES.PREDATORS, 0, 500, 1).onFinishChange(() => { renderer.reset(); });
+  distances.add(options.radius, TYPES.OBSTACLES, 0, 500, 1).onFinishChange(() => { renderer.reset(); });
 
   const forces = gui.addFolder("Forces");
   forces.open();
