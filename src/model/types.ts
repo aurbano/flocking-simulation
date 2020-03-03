@@ -37,4 +37,5 @@ export type Neighbour = {
   y: number,
   distance: number,
   rotation: number,
+  magnitude: number,
 };

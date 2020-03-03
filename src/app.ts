@@ -10,8 +10,8 @@ const heatmap = urlParams.get('heatmap') === '' || urlParams.get('heatmap') === 
 
 const options: Options = {
   containerId: 'flock',
-  boidLength: 5,
-  boidHeight: 10,
+  boidLength: 7,
+  boidHeight: 12,
   number: debug ? 5 : 150,
   heatmapGridSize: 10,
   background: null,
@@ -26,7 +26,7 @@ const options: Options = {
   visionAngle: 45,
   randomMoveChance: 10,
   returnMargin: 100,
-  cooldown: 0.1,
+  cooldown: 0.5,
 
   radius: {
     [TYPES.COHESION]: 400,

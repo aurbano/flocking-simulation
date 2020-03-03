@@ -144,7 +144,7 @@ export class Renderer {
       Object.values(TYPES).forEach(type => {
         forces[type] = {
           rotation: null,
-          magnitude: 0,
+          magnitude: boid.desiredVector.magnitude,
         };
         neighbours[type] = [];
       });
@@ -174,6 +174,7 @@ export class Renderer {
           y: neighbourBoid.y,
           distance,
           rotation: neighbourBoid.rotation,
+          magnitude: neighbourBoid.desiredVector.magnitude,
         };
         
         boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, this.maxD) * 0.2);
@@ -194,17 +195,26 @@ export class Renderer {
 
         // linear force for cohesion
         const cohesionDistance = Util.distance(weightedVector, boid, this.options.radius[TYPES.COHESION]);
-        forces[TYPES.COHESION].magnitude = 0.5 + cohesionDistance / this.options.radius[TYPES.COHESION];
+        forces[TYPES.COHESION].magnitude = Math.max(
+          forces[TYPES.COHESION].magnitude,
+          0.5 + cohesionDistance / this.options.radius[TYPES.COHESION]
+        );
       }
 
       // alignment makes it want to fly in the same rotation
       if (neighbours[TYPES.ALIGNMENT].length > 0) {
         boid.tint = COLORS[TYPES.ALIGNMENT];
         // calculate their average direction
-        const rotations = neighbours[TYPES.ALIGNMENT].map((each: Neighbour) => each.rotation).reduce((a: number, b: number) => a + b, 0);
-        const avg = rotations / neighbours[TYPES.ALIGNMENT].length;
-        forces[TYPES.ALIGNMENT].rotation = avg;
-        forces[TYPES.ALIGNMENT].magnitude = 1;
+        let rotations = 0;
+        let magnitudes = 0;
+        neighbours[TYPES.ALIGNMENT].forEach((each: Neighbour) => {
+          rotations += each.rotation;
+          magnitudes += each.magnitude;
+        });
+        const avgRotation = rotations / neighbours[TYPES.ALIGNMENT].length;
+        const avgMagnitude = magnitudes / neighbours[TYPES.ALIGNMENT].length;
+        forces[TYPES.ALIGNMENT].rotation = avgRotation;
+        forces[TYPES.ALIGNMENT].magnitude = avgMagnitude;
       }
 
       // separation makes it want to fly away from neighbours
@@ -212,7 +222,7 @@ export class Renderer {
         boid.tint = COLORS[TYPES.SEPARATION];
         const weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
         forces[TYPES.SEPARATION].rotation = weightedVector.rotation - 3 * Math.PI / 2;
-        forces[TYPES.SEPARATION].magnitude = 1.5;
+        forces[TYPES.SEPARATION].magnitude = Math.max(1.5, forces[TYPES.SEPARATION].magnitude);
       }
 
       // Set the mouse as a predator
@@ -224,13 +234,15 @@ export class Renderer {
         boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.options.radius[TYPES.PREDATORS]), 2);
 
         forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
-        forces[TYPES.PREDATORS].magnitude = Util.expDecay(mouseDistance, 1, this.options.radius[TYPES.PREDATORS] * 0.9, 5);
+        forces[TYPES.PREDATORS].magnitude = Math.max(
+          forces[TYPES.PREDATORS].magnitude,
+          Util.expDecay(mouseDistance, 1, this.options.radius[TYPES.PREDATORS] * 0.9, 5)
+        );
       }
 
-      let totalRotation = boid.desiredVector.rotation;
+      let totalRotation = 0;
       let totalWeight = 0;
-
-      let totalMagnitude = boid.desiredVector.magnitude;
+      let totalMagnitude = 0;
 
       Object.values(TYPES).forEach(type => {
         if (forces[type].rotation === null) {
@@ -261,7 +273,7 @@ export class Renderer {
 
         // cool down the magnitude
         if (boid.desiredVector.magnitude > 1) {
-          newMagnitude = Math.max(1, boid.desiredVector.magnitude - this.options.cooldown / 10);
+          newMagnitude = Math.max(1, boid.desiredVector.magnitude - this.options.cooldown / 100);
         }
       }
 

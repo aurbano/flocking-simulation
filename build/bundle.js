@@ -688,7 +688,6 @@ function isMobile(userAgent) {
         result.apple.tablet || result.android.tablet || result.windows.tablet;
     return result;
 }
-//# sourceMappingURL=isMobile.js.map
 
 var settings_1 = createCommonjsModule(function (module, exports) {
 
@@ -1008,7 +1007,7 @@ var settings = {
 
 exports.isMobile = isMobile$1;
 exports.settings = settings;
-//# sourceMappingURL=settings.js.map
+
 });
 
 unwrapExports(settings_1);
@@ -3534,7 +3533,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     MASK_TYPES[MASK_TYPES["STENCIL"] = 2] = "STENCIL";
     MASK_TYPES[MASK_TYPES["SPRITE"] = 3] = "SPRITE";
 })(exports.MASK_TYPES || (exports.MASK_TYPES = {}));
-//# sourceMappingURL=constants.js.map
+
 });
 
 unwrapExports(constants);
@@ -4480,7 +4479,7 @@ exports.skipHello = skipHello;
 exports.string2hex = string2hex;
 exports.trimCanvas = trimCanvas;
 exports.uid = uid;
-//# sourceMappingURL=utils.js.map
+
 });
 
 unwrapExports(utils);
@@ -6441,7 +6440,7 @@ exports.Rectangle = Rectangle;
 exports.RoundedRectangle = RoundedRectangle;
 exports.Transform = Transform;
 exports.groupD8 = groupD8;
-//# sourceMappingURL=math.js.map
+
 });
 
 unwrapExports(math);
@@ -8364,7 +8363,7 @@ Container.prototype.containerUpdateTransform = Container.prototype.updateTransfo
 exports.Bounds = Bounds;
 exports.Container = Container;
 exports.DisplayObject = DisplayObject;
-//# sourceMappingURL=display.js.map
+
 });
 
 unwrapExports(display);
@@ -9067,7 +9066,7 @@ AccessibilityManager.prototype.destroy = function destroy ()
 
 exports.AccessibilityManager = AccessibilityManager;
 exports.accessibleTarget = accessibleTarget;
-//# sourceMappingURL=accessibility.js.map
+
 });
 
 unwrapExports(accessibility);
@@ -9915,7 +9914,7 @@ var TickerPlugin = /** @class */ (function () {
 
 exports.Ticker = Ticker;
 exports.TickerPlugin = TickerPlugin;
-//# sourceMappingURL=ticker.js.map
+
 });
 
 unwrapExports(ticker);
@@ -12526,7 +12525,7 @@ exports.InteractionEvent = InteractionEvent;
 exports.InteractionManager = InteractionManager;
 exports.InteractionTrackingData = InteractionTrackingData;
 exports.interactiveTarget = interactiveTarget;
-//# sourceMappingURL=interaction.js.map
+
 });
 
 unwrapExports(interaction);
@@ -12730,7 +12729,7 @@ Object.defineProperties(Runner.prototype, {
 });
 
 exports.Runner = Runner;
-//# sourceMappingURL=runner.js.map
+
 });
 
 unwrapExports(runner);
@@ -25835,7 +25834,7 @@ exports.defaultFilterVertex = defaultFilter;
 exports.defaultVertex = _default;
 exports.resources = index;
 exports.systems = systems;
-//# sourceMappingURL=core.js.map
+
 });
 
 unwrapExports(core);
@@ -26106,7 +26105,7 @@ ResizePlugin.destroy = function destroy ()
 Application.registerPlugin(ResizePlugin);
 
 exports.Application = Application;
-//# sourceMappingURL=app.js.map
+
 });
 
 unwrapExports(app);
@@ -26397,7 +26396,7 @@ Extract.arrayPostDivide = function arrayPostDivide (pixels, out)
 };
 
 exports.Extract = Extract;
-//# sourceMappingURL=extract.js.map
+
 });
 
 unwrapExports(extract);
@@ -28932,7 +28931,6 @@ Loader.use = function LoaderUseStatic(fn) {
 
   return Loader;
 };
-//# sourceMappingURL=resource-loader.esm.js.map
 
 var resourceLoader_esm = /*#__PURE__*/Object.freeze({
 	__proto__: null,
@@ -29248,7 +29246,7 @@ exports.AppLoaderPlugin = AppLoaderPlugin;
 exports.Loader = Loader;
 exports.LoaderResource = LoaderResource;
 exports.TextureLoader = TextureLoader;
-//# sourceMappingURL=loaders.js.map
+
 });
 
 unwrapExports(loaders);
@@ -30238,7 +30236,7 @@ var ParticleRenderer = /*@__PURE__*/(function (ObjectRenderer) {
 
 exports.ParticleContainer = ParticleContainer;
 exports.ParticleRenderer = ParticleRenderer;
-//# sourceMappingURL=particles.js.map
+
 });
 
 unwrapExports(particles);
@@ -34059,7 +34057,7 @@ exports.GraphicsData = GraphicsData;
 exports.GraphicsGeometry = GraphicsGeometry;
 exports.LineStyle = LineStyle;
 exports.graphicsUtils = index;
-//# sourceMappingURL=graphics.js.map
+
 });
 
 unwrapExports(graphics);
@@ -34752,7 +34750,7 @@ var Sprite = /*@__PURE__*/(function (Container) {
 }(display.Container));
 
 exports.Sprite = Sprite;
-//# sourceMappingURL=sprite.js.map
+
 });
 
 unwrapExports(sprite);
@@ -37064,7 +37062,7 @@ exports.TEXT_GRADIENT = TEXT_GRADIENT;
 exports.Text = Text;
 exports.TextMetrics = TextMetrics;
 exports.TextStyle = TextStyle;
-//# sourceMappingURL=text.js.map
+
 });
 
 unwrapExports(text);
@@ -37806,7 +37804,7 @@ exports.BasePrepare = BasePrepare;
 exports.CountLimiter = CountLimiter;
 exports.Prepare = Prepare;
 exports.TimeLimiter = TimeLimiter;
-//# sourceMappingURL=prepare.js.map
+
 });
 
 unwrapExports(prepare);
@@ -38226,7 +38224,7 @@ SpritesheetLoader.getResourcePath = function getResourcePath (resource, baseUrl)
 
 exports.Spritesheet = Spritesheet;
 exports.SpritesheetLoader = SpritesheetLoader;
-//# sourceMappingURL=spritesheet.js.map
+
 });
 
 unwrapExports(spritesheet);
@@ -38742,7 +38740,7 @@ var TilingSpriteRenderer = /*@__PURE__*/(function (ObjectRenderer) {
 
 exports.TilingSprite = TilingSprite;
 exports.TilingSpriteRenderer = TilingSpriteRenderer;
-//# sourceMappingURL=sprite-tiling.js.map
+
 });
 
 unwrapExports(spriteTiling);
@@ -39581,7 +39579,7 @@ BitmapFontLoader.use = function use (resource, next)
 
 exports.BitmapFontLoader = BitmapFontLoader;
 exports.BitmapText = BitmapText;
-//# sourceMappingURL=text-bitmap.js.map
+
 });
 
 unwrapExports(textBitmap);
@@ -39651,7 +39649,7 @@ var AlphaFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.AlphaFilter = AlphaFilter;
-//# sourceMappingURL=filter-alpha.js.map
+
 });
 
 unwrapExports(filterAlpha);
@@ -40083,7 +40081,7 @@ var BlurFilter = /*@__PURE__*/(function (Filter) {
 
 exports.BlurFilter = BlurFilter;
 exports.BlurFilterPass = BlurFilterPass;
-//# sourceMappingURL=filter-blur.js.map
+
 });
 
 unwrapExports(filterBlur);
@@ -40687,7 +40685,7 @@ var ColorMatrixFilter = /*@__PURE__*/(function (Filter) {
 ColorMatrixFilter.prototype.grayscale = ColorMatrixFilter.prototype.greyscale;
 
 exports.ColorMatrixFilter = ColorMatrixFilter;
-//# sourceMappingURL=filter-color-matrix.js.map
+
 });
 
 unwrapExports(filterColorMatrix);
@@ -40810,7 +40808,7 @@ var DisplacementFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.DisplacementFilter = DisplacementFilter;
-//# sourceMappingURL=filter-displacement.js.map
+
 });
 
 unwrapExports(filterDisplacement);
@@ -40852,7 +40850,7 @@ var FXAAFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.FXAAFilter = FXAAFilter;
-//# sourceMappingURL=filter-fxaa.js.map
+
 });
 
 unwrapExports(filterFxaa);
@@ -40936,7 +40934,7 @@ var NoiseFilter = /*@__PURE__*/(function (Filter) {
 }(core.Filter));
 
 exports.NoiseFilter = NoiseFilter;
-//# sourceMappingURL=filter-noise.js.map
+
 });
 
 unwrapExports(filterNoise);
@@ -42204,7 +42202,7 @@ exports.Mesh = Mesh;
 exports.MeshBatchUvs = MeshBatchUvs;
 exports.MeshGeometry = MeshGeometry;
 exports.MeshMaterial = MeshMaterial;
-//# sourceMappingURL=mesh.js.map
+
 });
 
 unwrapExports(mesh);
@@ -43026,7 +43024,7 @@ exports.RopeGeometry = RopeGeometry;
 exports.SimpleMesh = SimpleMesh;
 exports.SimplePlane = SimplePlane;
 exports.SimpleRope = SimpleRope;
-//# sourceMappingURL=mesh-extras.js.map
+
 });
 
 unwrapExports(meshExtras);
@@ -43490,7 +43488,7 @@ var AnimatedSprite = /*@__PURE__*/(function (Sprite) {
  */
 
 exports.AnimatedSprite = AnimatedSprite;
-//# sourceMappingURL=sprite-animated.js.map
+
 });
 
 unwrapExports(spriteAnimated);
@@ -43518,7 +43516,6 @@ loaders_2.registerPlugin(spritesheet_2);
 
 app_1.registerPlugin(ticker_3);
 app_1.registerPlugin(loaders_1);
-//# sourceMappingURL=pixi.es.js.map
 
 var stats_min = createCommonjsModule(function (module, exports) {
 // stats.js - http://github.com/mrdoob/stats.js
@@ -43600,7 +43597,6 @@ var Util = (function () {
     };
     return Util;
 }());
-//# sourceMappingURL=util.js.map
 
 var _a;
 var TYPES = {
@@ -43629,7 +43625,6 @@ var textStyle = new text_4({
     wordWrap: true,
     wordWrapWidth: 440
 });
-//# sourceMappingURL=constants.js.map
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -43769,7 +43764,6 @@ var Boid = (function (_super) {
     };
     return Boid;
 }(sprite_1));
-//# sourceMappingURL=boid.js.map
 
 var Renderer = (function () {
     function Renderer(options) {
@@ -43865,7 +43859,7 @@ var Renderer = (function () {
             Object.values(TYPES).forEach(function (type) {
                 forces[type] = {
                     rotation: null,
-                    magnitude: 0,
+                    magnitude: boid.desiredVector.magnitude,
                 };
                 neighbours[type] = [];
             });
@@ -43889,6 +43883,7 @@ var Renderer = (function () {
                     y: neighbourBoid.y,
                     distance: distance,
                     rotation: neighbourBoid.rotation,
+                    magnitude: neighbourBoid.desiredVector.magnitude,
                 };
                 boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, distance, UI_COLORS.VISIBLE, Util.fade(distance, this_1.maxD) * 0.2);
                 for (var _i = 0, neighbourTypes_1 = neighbourTypes; _i < neighbourTypes_1.length; _i++) {
@@ -43904,20 +43899,26 @@ var Renderer = (function () {
                 var weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
                 forces[TYPES.COHESION].rotation = weightedVector.rotation;
                 var cohesionDistance = Util.distance(weightedVector, boid, this_1.options.radius[TYPES.COHESION]);
-                forces[TYPES.COHESION].magnitude = 0.5 + cohesionDistance / this_1.options.radius[TYPES.COHESION];
+                forces[TYPES.COHESION].magnitude = Math.max(forces[TYPES.COHESION].magnitude, 0.5 + cohesionDistance / this_1.options.radius[TYPES.COHESION]);
             }
             if (neighbours[TYPES.ALIGNMENT].length > 0) {
                 boid.tint = COLORS[TYPES.ALIGNMENT];
-                var rotations = neighbours[TYPES.ALIGNMENT].map(function (each) { return each.rotation; }).reduce(function (a, b) { return a + b; }, 0);
-                var avg = rotations / neighbours[TYPES.ALIGNMENT].length;
-                forces[TYPES.ALIGNMENT].rotation = avg;
-                forces[TYPES.ALIGNMENT].magnitude = 1;
+                var rotations_1 = 0;
+                var magnitudes_1 = 0;
+                neighbours[TYPES.ALIGNMENT].forEach(function (each) {
+                    rotations_1 += each.rotation;
+                    magnitudes_1 += each.magnitude;
+                });
+                var avgRotation = rotations_1 / neighbours[TYPES.ALIGNMENT].length;
+                var avgMagnitude = magnitudes_1 / neighbours[TYPES.ALIGNMENT].length;
+                forces[TYPES.ALIGNMENT].rotation = avgRotation;
+                forces[TYPES.ALIGNMENT].magnitude = avgMagnitude;
             }
             if (neighbours[TYPES.SEPARATION].length > 0) {
                 boid.tint = COLORS[TYPES.SEPARATION];
                 var weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
                 forces[TYPES.SEPARATION].rotation = weightedVector.rotation - 3 * Math.PI / 2;
-                forces[TYPES.SEPARATION].magnitude = 1.5;
+                forces[TYPES.SEPARATION].magnitude = Math.max(1.5, forces[TYPES.SEPARATION].magnitude);
             }
             var mouseCoords = this_1.app.renderer.plugins.interaction.mouse.global;
             var mouseDistance = Util.distance(mouseCoords, boid, this_1.options.radius[TYPES.PREDATORS]);
@@ -43926,11 +43927,11 @@ var Renderer = (function () {
                 var localMouseCoords = this_1.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
                 boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this_1.options.radius[TYPES.PREDATORS]), 2);
                 forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
-                forces[TYPES.PREDATORS].magnitude = Util.expDecay(mouseDistance, 1, this_1.options.radius[TYPES.PREDATORS] * 0.9, 5);
+                forces[TYPES.PREDATORS].magnitude = Math.max(forces[TYPES.PREDATORS].magnitude, Util.expDecay(mouseDistance, 1, this_1.options.radius[TYPES.PREDATORS] * 0.9, 5));
             }
-            var totalRotation = boid.desiredVector.rotation;
+            var totalRotation = 0;
             var totalWeight = 0;
-            var totalMagnitude = boid.desiredVector.magnitude;
+            var totalMagnitude = 0;
             Object.values(TYPES).forEach(function (type) {
                 if (forces[type].rotation === null) {
                     return;
@@ -43950,7 +43951,7 @@ var Renderer = (function () {
                     newRotation = Util.unwrap(boid.getAngleToPoint(newX - boid.x, newY - boid.y) - Math.PI / 2);
                 }
                 if (boid.desiredVector.magnitude > 1) {
-                    newMagnitude = Math.max(1, boid.desiredVector.magnitude - this_1.options.cooldown / 10);
+                    newMagnitude = Math.max(1, boid.desiredVector.magnitude - this_1.options.cooldown / 100);
                 }
             }
             boid.desiredVector.rotation = newRotation;
@@ -46562,12 +46563,10 @@ function updateDisplays(controllerArray) {
   });
 }
 var GUI$1 = GUI;
-//# sourceMappingURL=dat.gui.module.js.map
 
 function setupGui(options, renderer) {
     var gui = new GUI$1({
         name: "Setings",
-        closed: false,
     });
     var core = gui.addFolder("Core (resets the simulation)");
     core.open();
@@ -46609,10 +46608,8 @@ function setupGui(options, renderer) {
         }
     };
     gui.add(methods, "togglePause");
-    gui.hide();
     return gui;
 }
-//# sourceMappingURL=gui.js.map
 
 var _a$1, _b;
 var urlParams = new URLSearchParams(window.location.search);
@@ -46620,8 +46617,8 @@ var debug = urlParams.get('debug') === '' || urlParams.get('debug') === 'true' ?
 var heatmap = urlParams.get('heatmap') === '' || urlParams.get('heatmap') === 'true' ? true : false;
 var options = {
     containerId: 'flock',
-    boidLength: 5,
-    boidHeight: 10,
+    boidLength: 7,
+    boidHeight: 12,
     number: debug ? 5 : 150,
     heatmapGridSize: 10,
     background: null,
@@ -46634,7 +46631,7 @@ var options = {
     visionAngle: 45,
     randomMoveChance: 10,
     returnMargin: 100,
-    cooldown: 0.1,
+    cooldown: 0.5,
     radius: (_a$1 = {},
         _a$1[TYPES.COHESION] = 400,
         _a$1[TYPES.ALIGNMENT] = 100,
@@ -46653,5 +46650,4 @@ var options = {
 var renderer = new Renderer(options);
 setupGui(options, renderer);
 renderer.start();
-//# sourceMappingURL=app.js.map
 //# sourceMappingURL=bundle.js.map

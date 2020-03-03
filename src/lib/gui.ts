@@ -6,7 +6,6 @@ import { TYPES } from "./constants";
 export function setupGui(options: Options, renderer: Renderer) {
   const gui = new dat.GUI({
     name: "Setings",
-    closed: false,
   });
 
   const core = gui.addFolder("Core (resets the simulation)");
@@ -55,8 +54,6 @@ export function setupGui(options: Options, renderer: Renderer) {
   };
 
   gui.add(methods, "togglePause");
-
-  gui.hide();
 
   return gui;
 }
