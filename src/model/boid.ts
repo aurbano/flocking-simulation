@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { Options } from "./types";
 import { COLORS, textStyle, UI_COLORS, TYPES, BUILD_ENV } from "../lib/constants";
+import { Util } from "../lib/util";
 
 type Vector = {
   rotation: number; // radians
@@ -41,53 +42,6 @@ export class Boid extends PIXI.Sprite {
     (BUILD_ENV === 'development') && this.initDebug();
   }
 
-  /**
-   * Neighbour coordinates from this boid's reference
-   * @param neighbour 
-   */
-  public getNeighbourCoords(neighbour: Boid) {
-    const sin = Math.sin(this.rotation);
-    const cos = Math.cos(this.rotation);
-
-    const x = neighbour.x - this.x;
-    const y = neighbour.y - this.y;
-
-    // apply the corresponding rotation matrix
-    return new PIXI.Point(
-      x * cos + y * sin,
-      -x * sin + y * cos
-    )
-  }
-
-  public getAngleToPoint(x: number, y: number) {
-    const angle = Math.atan(y / x);
-    if (x < 0) {
-      return angle + Math.PI;
-    }
-    return angle;
-  }
-
-  public getPointInfo(x: number, y: number) {
-    const visionAngle = (this.options.visionAngle * Math.PI) / 180;
-    const angle = this.getAngleToPoint(x, y);
-
-    let neighbourAngleFromY = angle - Math.PI / 2;
-
-    if (neighbourAngleFromY < 0) {
-      neighbourAngleFromY += 2 * Math.PI;
-    }
-
-    const isVisible = (
-      neighbourAngleFromY < visionAngle ||
-      neighbourAngleFromY > 2 * Math.PI - visionAngle
-    );
-
-    return {
-      isVisible,
-      angle,
-    };
-  }
-
   public drawDebugLine(x: number, y:number, color: number, alpha: number = 1, thickness: number = 1) {
     if (BUILD_ENV !== 'development') {
       return;
@@ -121,7 +75,7 @@ export class Boid extends PIXI.Sprite {
     this.debugNeighbours.name = "debugNeighbours";
 
     // draw desired direction vector
-    this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, UI_COLORS.DESIRED);
+    this.drawDebugVector(this.rotation - this.desiredVector.rotation, this.desiredVector.magnitude * 50, UI_COLORS.DESIRED, 2);
 
     this.addChild(this.debugNeighbours);
   }

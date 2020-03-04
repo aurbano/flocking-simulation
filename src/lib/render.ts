@@ -1,10 +1,43 @@
 import * as PIXI from "pixi.js";
 import Stats from "stats.js";
 
-import { Options, Neighbour, Force } from "../model/types";
-import { Util } from "./util";
+import { Options, Neighbour, Force, PointInfo, Vector } from "../model/types";
+import { Util, Position } from "./util";
 import { COLORS, UI_COLORS, TYPES, BUILD_ENV } from "./constants";
 import { Boid } from "../model/boid";
+
+// Types for which we care about neighbours
+const neighbourTypes = [
+  TYPES.SEPARATION,
+  TYPES.ALIGNMENT,
+  TYPES.COHESION,
+];
+
+/* Reusable objects to reduce GC */
+const pointInfo: PointInfo = {
+  isVisible: false,
+  angle: 0,
+};
+const neighbourCoords: Position = {
+  x: 0,
+  y: 0,
+};
+const neighbour: Neighbour = {
+  x: 0,
+  y: 0,
+  rotation: 0,
+  magnitude: 0,
+};
+const weightedVector: Vector = {
+  x: 0,
+  y: 0,
+  rotation: 0,
+};
+// Forces that determine flocking
+const forces: {
+  [key: string]: Force,
+} = {};
+const neighbours: any = {};
 
 export class Renderer {
   private app: PIXI.Application;
@@ -28,6 +61,7 @@ export class Renderer {
   private radius: {
     [key: string]: number;
   };
+  private visionAngle: number; // in radians
 
   constructor(private options: Options) {
     this.app = new PIXI.Application({
@@ -61,6 +95,8 @@ export class Renderer {
       }
     };
 
+    this.app.ticker.autoStart = false;
+
     // Setup animation loop
     this.app.ticker.add(delta => {
       this.stats.begin();
@@ -70,6 +106,8 @@ export class Renderer {
 
       this.stats.end();
     });
+
+    this.start();
   }
 
   public reset = () => {
@@ -79,6 +117,7 @@ export class Renderer {
     Object.values(TYPES).forEach(type => {
       this.radius[type] = Math.pow(this.options.radius[type], 2);
     });
+    this.visionAngle = (this.options.visionAngle * Math.PI) / 180;
 
     this.app.stage.removeChildren();
     this.boids = [];
@@ -87,12 +126,13 @@ export class Renderer {
       this.boidContainer = new PIXI.ParticleContainer(this.options.number, {
         position: true,
         rotation: true,
-        tint: true
+        tint: false
       });
     } else {
       this.boidContainer = new PIXI.Container();
     }
 
+    this.boidContainer.interactiveChildren = false;
     this.boidContainer.zIndex = 2;
     this.app.stage.addChild(this.boidContainer);
 
@@ -102,6 +142,8 @@ export class Renderer {
     // Initialize boids
     for (let i = 0; i < this.options.number; i++) {
       const boid = new Boid(this.options, this.maxX, this.maxY, this.boidTexture);
+
+      boid.interactiveChildren = false;
 
       this.boidContainer.addChild(boid);
       this.boids.push(boid);
@@ -132,25 +174,16 @@ export class Renderer {
   };
 
   private updateBoids(delta: number) {
-    const totalBoids = this.boids.length;
+    this.stop();
+    for (let i = 0; i < this.options.number; i++) {
+      this.updateBoid(i, delta);
+    }
+    this.start();
+  }
 
-    // Types for which we care about neighbours
-    const neighbourTypes = [
-      TYPES.SEPARATION,
-      TYPES.ALIGNMENT,
-      TYPES.COHESION,
-    ];
-
-    for (let i = 0; i < totalBoids; i++) {
-      const boid = this.boids[i];
+  private updateBoid(i: number, delta: number) {
+    const boid = this.boids[i];
       (BUILD_ENV === 'development') && boid.debugLog(`[${i}]`);
-      boid.tint = UI_COLORS.NONE;
-
-      // Forces that determine flocking
-      const forces: {
-        [key: string]: Force,
-      } = {};
-      const neighbours: any = {};
 
       Object.values(TYPES).forEach(type => {
         forces[type] = {
@@ -163,7 +196,7 @@ export class Renderer {
       (BUILD_ENV === 'development') && boid.resetDebug();
 
       // Iterate over the rest of the boids to find neighbours
-      for (let a = 0; a < totalBoids; a++) {
+      for (let a = 0; a < this.options.number; a++) {
         if (a === i) {
           continue;
         }
@@ -174,21 +207,19 @@ export class Renderer {
           continue;
         }
 
-        const neighbourCoords = boid.getNeighbourCoords(neighbourBoid);
-        const neighbourInfo = boid.getPointInfo(neighbourCoords.x, neighbourCoords.y);
+        Util.getNeighbourCoords(boid, neighbourBoid, neighbourCoords);
+        Util.getPointInfo(this.visionAngle, neighbourCoords.x, neighbourCoords.y, pointInfo);
 
-        if (!neighbourInfo.isVisible) {
+        if (!pointInfo.isVisible) {
           continue;
         }
 
-        const neighbour: Neighbour = {
-          x: neighbourBoid.x,
-          y: neighbourBoid.y,
-          rotation: neighbourBoid.rotation,
-          magnitude: neighbourBoid.desiredVector.magnitude,
-        };
+        neighbour.x = neighbourBoid.x;
+        neighbour.y = neighbourBoid.y;
+        neighbour.rotation = neighbourBoid.rotation;
+        neighbour.magnitude = neighbourBoid.desiredVector.magnitude;
         
-        (BUILD_ENV === 'development') && boid.drawDebugVector(Math.PI / 2 - neighbourInfo.angle, Math.sqrt(distance), UI_COLORS.VISIBLE, Util.fade(distance, this.maxD) * 0.2);
+        (BUILD_ENV === 'development') && boid.drawDebugVector(Math.PI / 2 - pointInfo.angle, Math.sqrt(distance), UI_COLORS.VISIBLE, Util.fade(distance, this.maxD) * 0.2);
 
         for (let type of neighbourTypes) {
           if (distance < this.radius[type]) {
@@ -200,8 +231,7 @@ export class Renderer {
 
       // cohesion makes it want to go towards neighbours
       if (neighbours[TYPES.COHESION].length > 0) {
-        boid.tint = COLORS[TYPES.COHESION];
-        const weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
+        Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid, weightedVector);
         forces[TYPES.COHESION].rotation = weightedVector.rotation;
 
         // linear force for cohesion
@@ -214,7 +244,6 @@ export class Renderer {
 
       // alignment makes it want to fly in the same rotation
       if (neighbours[TYPES.ALIGNMENT].length > 0) {
-        boid.tint = COLORS[TYPES.ALIGNMENT];
         // calculate their average direction
         let rotations = 0;
         let magnitudes = 0;
@@ -230,8 +259,7 @@ export class Renderer {
 
       // separation makes it want to fly away from neighbours
       if (neighbours[TYPES.SEPARATION].length > 0) {
-        boid.tint = COLORS[TYPES.SEPARATION];
-        const weightedVector = Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid);
+        Util.getNeighboursWeightedVector(neighbours[TYPES.COHESION], boid, weightedVector);
         forces[TYPES.SEPARATION].rotation = weightedVector.rotation - 3 * Math.PI / 2;
         forces[TYPES.SEPARATION].magnitude = Math.max(1.5, forces[TYPES.SEPARATION].magnitude);
       }
@@ -241,14 +269,12 @@ export class Renderer {
         const mouseCoords = this.app.renderer.plugins.interaction.mouse.global;
         const mouseDistance = Util.distance(mouseCoords, boid, this.options.radius[TYPES.PREDATORS]);
         if (mouseDistance !== null && mouseDistance < this.radius[TYPES.PREDATORS]) {
-          boid.tint = COLORS[TYPES.PREDATORS];
-
           if (BUILD_ENV === 'development') {
             const localMouseCoords = this.app.renderer.plugins.interaction.mouse.getLocalPosition(boid);
             boid.drawDebugLine(localMouseCoords.x, localMouseCoords.y, COLORS[TYPES.PREDATORS], Util.fade(mouseDistance, this.radius[TYPES.PREDATORS]), 2);
           }
           
-          forces[TYPES.PREDATORS].rotation = Util.unwrap(boid.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
+          forces[TYPES.PREDATORS].rotation = Util.unwrap(Util.getAngleToPoint(mouseCoords.x - boid.x, mouseCoords.y - boid.y) - 3 * Math.PI / 2);
           forces[TYPES.PREDATORS].magnitude = Math.max(
             forces[TYPES.PREDATORS].magnitude,
             Util.expDecay(mouseDistance, 1, this.radius[TYPES.PREDATORS] * 0.7, 5)
@@ -276,6 +302,7 @@ export class Renderer {
       let newRotation = totalWeight > 0 ? totalRotation / totalWeight : boid.desiredVector.rotation;
       let newMagnitude = totalWeight > 0 ? totalMagnitude / totalWeight : boid.desiredVector.magnitude;
 
+      // are new forces acting on the boid?
       if (newRotation - boid.desiredVector.rotation < 0.01) {
         // no change, check if we're out of bounds to start heading back in
         if (boid.x <= -this.options.returnMargin || boid.y <= -this.options.returnMargin ||
@@ -284,7 +311,7 @@ export class Renderer {
           // lets make them return to a random point inside the screen + margin
           const newX = Math.random() * (this.maxX - 2 * this.options.returnMargin) + this.options.returnMargin;
           const newY = Math.random() * (this.maxY - 2 * this.options.returnMargin) + this.options.returnMargin;
-          newRotation = Util.unwrap(boid.getAngleToPoint(newX - boid.x, newY - boid.y) - Math.PI / 2);
+          newRotation = Util.unwrap(Util.getAngleToPoint(newX - boid.x, newY - boid.y) - Math.PI / 2);
         }
 
         // cool down the magnitude
@@ -299,6 +326,7 @@ export class Renderer {
       // bit of random movement
       if (Math.random() * 100 < this.options.randomMoveChance) {
         boid.desiredVector.rotation += (Math.random() - 0.5) * Math.PI / 20;
+        boid.desiredVector.magnitude = Math.max(1, boid.desiredVector.magnitude + 0.5 * (Math.random() - 0.5));
       }
       boid.desiredVector.rotation = Util.unwrap(boid.desiredVector.rotation);
 
@@ -321,18 +349,13 @@ export class Renderer {
       boid.x -= dx;
       boid.y += dy;
 
-      if (this.options.heatmap) {
-        boid.tint = 0xffffff;
-      }
-
       this.updateHeatmapCell(boid.x, boid.y);
-    }
   }
 
   private initBoidTexture() {
     // Prepare the boid texture for sprites
     const graphics = new PIXI.Graphics();
-    graphics.beginFill(0xffffff);
+    graphics.beginFill(UI_COLORS.NONE);
     graphics.lineStyle(0);
     if (this.options.heatmap) {
       graphics.lineStyle(2, 0xffffff);

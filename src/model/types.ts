@@ -28,6 +28,17 @@ export type Options = {
   },
 };
 
+export type PointInfo = {
+  isVisible: boolean,
+  angle: number,
+};
+
+export type Vector = {
+  x: number,
+  y: number,
+  rotation: number,
+};
+
 export type Force = {
   rotation: number,
   magnitude: number,

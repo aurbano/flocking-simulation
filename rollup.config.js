@@ -20,6 +20,6 @@ export default {
     }),
     resolve({ jsnext: true }),
     commonjs(),
-    terser(),
+    // terser(),
   ],
 };

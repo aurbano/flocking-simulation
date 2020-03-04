@@ -1,8 +1,8 @@
 import * as PIXI from "pixi.js";
 import { Boid } from "../model/boid";
-import { Neighbour } from "../model/types";
+import { Neighbour, PointInfo, Vector } from "../model/types";
 
-type Position = {
+export type Position = {
   x: number;
   y: number;
 };
@@ -12,19 +12,55 @@ export class Util {
     return min + Math.random() * (max - min);
   }
 
+  /**
+   * Neighbour coordinates from this boid's reference
+   * @param neighbour 
+   */
+  public static getNeighbourCoords(boid: Boid, neighbour: Boid, neighbourCoords: Position): void {
+    const sin = Util.quickSin(boid.rotation);
+    const cos = Util.quickCos(boid.rotation);
+
+    const x = neighbour.x - boid.x;
+    const y = neighbour.y - boid.y;
+
+    neighbourCoords.x = x * cos + y * sin;
+    neighbourCoords.y = -x * sin + y * cos;
+  }
+
+  public static getAngleToPoint(x: number, y: number) {
+    const angle = Math.atan(y / x);
+    if (x < 0) {
+      return angle + Math.PI;
+    }
+    return angle;
+  }
+
+  public static getPointInfo(visionAngle: number, x: number, y: number, point: PointInfo): void {
+    let angle = Util.getAngleToPoint(x, y) - Math.PI / 2;
+
+    if (angle < 0) {
+      angle += 2 * Math.PI;
+    }
+
+    const isVisible = (
+      angle < visionAngle ||
+      angle > 2 * Math.PI - visionAngle
+    );
+
+    point.isVisible = isVisible;
+    point.angle = angle + Math.PI / 2;
+  }
+
   public static getNeighboursWeightedVector(
     neighbours: Array<Neighbour>,
-    boid: Boid
-  ) {
+    boid: Boid,
+    vector: Vector
+  ): void {
     // [meanX, meanY] is the weighted center of mass of the neighbours
-    const meanX = Util.arrayMean(neighbours, (boid: Neighbour) => boid.x);
-    const meanY = Util.arrayMean(neighbours, (boid: Neighbour) => boid.y);
+    vector.x = Util.arrayMean(neighbours, (boid: Neighbour) => boid.x);
+    vector.y = Util.arrayMean(neighbours, (boid: Neighbour) => boid.y);
 
-    return {
-      rotation: Util.unwrap(boid.getAngleToPoint(meanX - boid.x, meanY - boid.y) - Math.PI / 2),
-      x: meanX,
-      y: meanY,
-    };
+    vector.rotation = Util.unwrap(Util.getAngleToPoint(vector.x - boid.x, vector.y - boid.y) - Math.PI / 2);
   }
 
   public static getRotation(meanX: number, meanY: number, boid: PIXI.Sprite) {
@@ -52,7 +88,7 @@ export class Util {
         return null;
       }
     }
-    return Math.pow(dx, 2) + Math.pow(dy, 2);
+    return dx * dx + dy * dy;
   }
 
   public static arrayMean(arr: Array<any>, getKey: Function) {
@@ -101,7 +137,21 @@ export class Util {
     return angle - wraps * mod;
  }
 
- public static expDecay(x: number, scale: number, rampCenter: number, steepness: number) {
-   return scale / (1 + Math.exp(steepness * (x - rampCenter))) + 1
- }
+  public static expDecay(x: number, scale: number, rampCenter: number, steepness: number) {
+    return scale / (1 + Math.exp(steepness * (x - rampCenter))) + 1
+  }
+
+  public static quickSin(x: number) {
+    if (x < -3.14159265) x += 6.28318531;
+    else if (x >  3.14159265) x -= 6.28318531;
+    if (x < 0) return 1.27323954 * x + .405284735 * x * x;
+    else return 1.27323954 * x - 0.405284735 * x * x;
+  }
+ 
+  public static quickCos(x: number) {
+    x += 1.57079632;
+    if (x >  3.14159265) x -= 6.28318531;
+    if (x < 0) return 1.27323954 * x + 0.405284735 * x * x
+    else return 1.27323954 * x - 0.405284735 * x * x;
+  }
 }
